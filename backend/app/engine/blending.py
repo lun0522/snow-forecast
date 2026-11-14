@@ -639,6 +639,8 @@ def process_band_snapshot(
     models_out: dict[str, Any] = {}
     for model_id, rows in model_series.items():
         covered_hours = sum(1 for r in rows if r["covered"])
+        if covered_hours == 0:
+            continue
         model_windows = {
             f"{win_h}h": _summarize_model_slice(rows[:win_h])
             for win_h in STANDARD_WINDOWS_HOURS

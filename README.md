@@ -2,12 +2,13 @@
 
 Personal ski resort snow forecast engine and dashboard using public meteorological models.
 
-## Target Resorts (Initial Scope)
+## Target Resorts
 - **Northstar California** (North Tahoe, CA)
 - **Heavenly Mountain** (South Tahoe, CA/NV)
 - **Kirkwood Mountain** (Sierra Crest, CA)
 - **Park City Mountain** (Wasatch Back, UT)
 - **Keystone Resort** (Summit County, CO)
+- **Whistler Blackcomb** (Coast Mountains, BC)
 
 ## Public Data Sources
 - **Open-Meteo** (`/v1/forecast` & `/v1/elevation`): Multi-model forecasts (`ecmwf_ifs025`, `gfs_global`, `gfs_hrrr`, `ncep_nbm_conus`, `gem_global`, `icon_global`) with Copernicus 90m DEM and elevation lapse-rate downscaling for Base, Mid, and Summit bands (gracefully skipped if unreachable).
@@ -51,7 +52,7 @@ python3 -m venv .venv
 ### API Endpoints
 - `GET /api/health` — API & latest SQLite forecast run status
 - `GET /api/runs` — Recent forecast runs stored in SQLite
-- `GET /api/resorts` — Overview summaries for all 5 resorts (24h/48h/72h/5d/7d Base/Mid/Summit consensus, snow level, confidence, run-to-run deltas)
+- `GET /api/resorts` — Overview summaries for all configured resorts (24h/48h/72h/5d/7d Base/Mid/Summit consensus, snow level, confidence, run-to-run deltas)
 - `GET /api/resorts/{resort_id}` — Detailed 168h consensus timeline, individual model breakdowns, and local-timezone daily rollups
 - `POST /api/refresh` — Trigger a live multi-source fetch, physics/consensus run, and SQLite save
 

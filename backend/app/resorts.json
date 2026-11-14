@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-11-14T05:55:21.020086+00:00",
+  "generated_at_utc": "2026-11-14T07:47:13.151471+00:00",
   "resorts": [
     {
       "id": "northstar",
@@ -278,6 +278,44 @@
             "relative_city": "Keystone",
             "relative_state": "CO"
           }
+        }
+      }
+    },
+    {
+      "id": "whistler-blackcomb",
+      "name": "Whistler Blackcomb",
+      "region": "Coast Mountains",
+      "state": "BC",
+      "timezone": "America/Vancouver",
+      "bands": {
+        "base": {
+          "label": "Whistler Village Base",
+          "lat": 50.1128,
+          "lon": -122.9543,
+          "reported_elevation_ft": 2214,
+          "reported_elevation_m": 674.8,
+          "dem_elevation_m": 680.0,
+          "dem_elevation_ft": 2231,
+          "nws": null
+        },
+        "mid": {
+          "label": "Roundhouse Lodge",
+          "lat": 50.0696,
+          "lon": -122.9465,
+          "reported_elevation_ft": 6069,
+          "reported_elevation_m": 1849.8,
+          "dem_elevation_m": 1820.0,
+          "dem_elevation_ft": 5971
+        },
+        "summit": {
+          "label": "Whistler Peak",
+          "lat": 50.0591,
+          "lon": -122.9569,
+          "reported_elevation_ft": 7160,
+          "reported_elevation_m": 2182.4,
+          "dem_elevation_m": 2172.0,
+          "dem_elevation_ft": 7126,
+          "nws": null
         }
       }
     }

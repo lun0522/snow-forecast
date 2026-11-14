@@ -42,7 +42,11 @@ def discover_all_resorts(output_path: Path = DEFAULT_OUTPUT_PATH) -> dict[str, A
     for resort in resorts:
         for band_key in ("base", "summit"):
             band = resort["bands"][band_key]
-            band["nws"] = discover_gridpoint(band["lat"], band["lon"])
+            try:
+                band["nws"] = discover_gridpoint(band["lat"], band["lon"])
+            except HttpFetchError as exc:
+                print(f"  WARN: NWS gridpoint lookup failed for {resort['id']} {band_key}: {exc}")
+                band["nws"] = None
 
     doc = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -62,7 +66,7 @@ def _print_summary(doc: dict[str, Any], output_path: Path) -> None:
             b = resort["bands"][band_key]
             dem_str = f" (DEM: {b['dem_elevation_ft']} ft)" if b.get("dem_elevation_ft") else ""
             nws_str = ""
-            if "nws" in b and b["nws"].get("grid_id"):
+            if b.get("nws") and b["nws"].get("grid_id"):
                 nws = b["nws"]
                 nws_str = f" | NWS {nws['grid_id']}:{nws['grid_x']},{nws['grid_y']}"
             print(

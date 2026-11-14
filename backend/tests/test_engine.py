@@ -207,6 +207,22 @@ class BlendingTests(unittest.TestCase):
         self.assertLessEqual(w24["snow_median_in"], w24["snow_max_in"])
         self.assertEqual(w24["rain_snow_risk"], "snow")
 
+    def test_zero_coverage_model_and_missing_nws_omitted_cleanly(self) -> None:
+        snap = self._build_synthetic_snapshot()
+        band = snap["resorts"][0]["bands"]["summit"]
+        band["nws"] = None
+        band["open_meteo"]["models"]["gfs_hrrr"]["hourly"] = [
+            {"time_utc": row["time_utc"], "temp_c": None, "precip_mm": None, "snowfall_cm": None}
+            for row in band["open_meteo"]["models"]["ecmwf_ifs025"]["hourly"]
+        ]
+        processed = process_snapshot(snap)
+        summit = processed["resorts"][0]["bands"]["summit"]
+
+        self.assertNotIn("gfs_hrrr", summit["models"])
+        self.assertNotIn("nws_gridpoints", summit["models"])
+        self.assertNotIn("gfs_hrrr", summit["windows"]["24h"]["models_used"])
+        self.assertIn("ecmwf_ifs025", summit["windows"]["24h"]["models_used"])
+
 
 if __name__ == "__main__":
     unittest.main()

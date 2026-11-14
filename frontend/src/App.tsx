@@ -1,16 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { AlertCircle, ArrowDownRight, ArrowUpRight, CloudSnow, Layers, RefreshCw } from "lucide-react";
+import { AlertCircle, RefreshCw } from "lucide-react";
 import { fetchResortDetail, fetchResorts, refreshForecasts } from "./api";
 import { DailyConsensusChart } from "./components/DailyConsensusChart";
 import { HourlyMeteogram } from "./components/HourlyMeteogram";
 import { ModelComparisonTable } from "./components/ModelComparisonTable";
 import type { BandKey, ForecastRunMeta, ResortDetail, ResortSummary } from "./types";
-import {
-  formatDeltaSnowCm,
-  formatElevM,
-  formatSnowCm,
-  formatUtcTimestamp,
-} from "./utils/format";
+import { formatElevM } from "./utils/format";
 
 export function App() {
   const [runMeta, setRunMeta] = useState<ForecastRunMeta | null>(null);
@@ -89,30 +84,14 @@ export function App() {
 
   const activeSummary = summaries.find((s) => s.id === selectedResortId) ?? null;
   const activeBand = detail?.bands[selectedBand] ?? null;
-  const runDelta72 = activeSummary?.run_delta?.summit_72h_in;
+  const bandOptionsSource = detail?.bands ?? activeSummary?.bands;
 
   return (
     <div className="min-h-screen text-slate-100">
-      {/* Top Command Header */}
+      {/* Top Control Header */}
       <header className="sticky top-0 z-30 border-b border-slate-800/80 bg-[#090F18]/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3 px-4 py-3 md:px-6">
-          <div className="flex flex-wrap items-center gap-3.5">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-sky-400/30 bg-sky-500/15 text-sky-300">
-                <CloudSnow className="h-5 w-5" />
-              </div>
-              <div>
-                <h1 className="text-base font-bold tracking-tight text-white">
-                  PowderConsensus
-                </h1>
-                <p className="text-[11px] text-slate-400">
-                  {runMeta
-                    ? `Updated ${formatUtcTimestamp(runMeta.fetched_at_utc, detail?.timezone ?? "America/Los_Angeles")}`
-                    : "Public multi-model snow forecast workstation"}
-                </p>
-              </div>
-            </div>
-
+        <div className="mx-auto flex max-w-[1440px] flex-wrap items-center justify-between gap-3 px-4 py-2.5 md:px-6">
+          <div className="flex flex-wrap items-center gap-3">
             {summaries.length > 0 && (
               <select
                 aria-label="Select ski resort"
@@ -127,10 +106,41 @@ export function App() {
                 ))}
               </select>
             )}
+
+            {/* Elevation Band Selector */}
+            {bandOptionsSource && (
+              <div className="inline-flex items-center rounded-lg border border-slate-800 bg-slate-950/80 p-0.5">
+                {(["base", "mid", "summit"] as BandKey[]).map((bk) => {
+                  const band = bandOptionsSource[bk];
+                  if (!band) return null;
+                  const active = bk === selectedBand;
+                  const explicitM = detail?.bands[bk]?.elevation_m ?? null;
+                  return (
+                    <button
+                      key={bk}
+                      type="button"
+                      onClick={() => setSelectedBand(bk)}
+                      className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition ${
+                        active
+                          ? "bg-sky-500/20 text-white font-semibold shadow-xs"
+                          : "text-slate-400 hover:text-slate-200"
+                      }`}
+                    >
+                      <span className="uppercase tracking-wider">{bk}</span>
+                      <span className="tabular-nums text-[11px] text-slate-300/90">
+                        {formatElevM(band.elevation_ft, explicitM)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">
-            {/* Live Refresh Action */}
+            {loadingDetail && (
+              <span className="text-xs text-sky-300">Syncing band details...</span>
+            )}
             <button
               type="button"
               disabled={refreshing}
@@ -172,79 +182,6 @@ export function App() {
             {/* Selected Resort Deep-Dive Workstation */}
             {detail && activeBand && (
               <section className="space-y-5">
-                {/* Resort Deep-Dive Header + Band Picker */}
-                <div className="rounded-xl border border-slate-800/90 bg-slate-900/75 p-4 md:p-5">
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2.5">
-                        <h2 className="text-xl font-bold text-white">{detail.name}</h2>
-                        <span className="rounded-md border border-slate-700 bg-slate-950 px-2 py-0.5 text-xs text-slate-300">
-                          {detail.region}, {detail.state} · {detail.timezone}
-                        </span>
-                        {runDelta72 != null && (
-                          <span
-                            className={`inline-flex items-center gap-0.5 rounded-md border px-2 py-0.5 text-xs font-medium tabular-nums ${
-                              runDelta72 > 0.2
-                                ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                                : runDelta72 < -0.2
-                                  ? "border-rose-500/30 bg-rose-500/10 text-rose-300"
-                                  : "border-slate-700 bg-slate-950 text-slate-400"
-                            }`}
-                          >
-                            {runDelta72 >= 0 ? (
-                              <ArrowUpRight className="h-3.5 w-3.5" />
-                            ) : (
-                              <ArrowDownRight className="h-3.5 w-3.5" />
-                            )}
-                            {formatDeltaSnowCm(runDelta72)} 72h vs prev run
-                          </span>
-                        )}
-                        {loadingDetail && (
-                          <span className="text-xs text-sky-300">Syncing band details...</span>
-                        )}
-                      </div>
-                      <p className="mt-1 text-xs text-slate-400">
-                        Viewing <strong className="text-slate-200">{activeBand.label}</strong> band at{" "}
-                        <strong className="tabular-nums text-slate-200">
-                          {formatElevM(activeBand.elevation_ft, activeBand.elevation_m)}
-                        </strong>
-                      </p>
-                    </div>
-
-                    {/* Elevation Band Selector Tabs */}
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Layers className="h-4 w-4 text-slate-400" />
-                      {(["base", "mid", "summit"] as BandKey[]).map((bk) => {
-                        const band = detail.bands[bk];
-                        if (!band) return null;
-                        const active = bk === selectedBand;
-                        return (
-                          <button
-                            key={bk}
-                            type="button"
-                            onClick={() => setSelectedBand(bk)}
-                            className={`rounded-lg border px-3 py-1.5 text-left transition ${
-                              active
-                                ? "border-sky-400/70 bg-sky-500/15 text-white"
-                                : "border-slate-800 bg-slate-950/60 text-slate-400 hover:border-slate-700 hover:text-slate-200"
-                            }`}
-                          >
-                            <div className="text-[11px] font-semibold uppercase tracking-wider">
-                              {bk}
-                            </div>
-                            <div className="tabular-nums text-xs text-slate-300">
-                              {formatElevM(band.elevation_ft, band.elevation_m)} · 72h{" "}
-                              <span className="text-sky-300 font-semibold">
-                                {formatSnowCm(band.windows["72h"]?.snow_median_in)}
-                              </span>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-
                 {/* Daily 7-Day Consensus Bar + Spread Chart & Local Day Table */}
                 <DailyConsensusChart
                   daily={activeBand.daily}

@@ -35,18 +35,13 @@ export function ModelComparisonTable({ band }: ModelComparisonTableProps) {
 
   return (
     <div className="rounded-xl border border-slate-800/90 bg-slate-900/65 p-4 md:p-5">
-      <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-800/70">
-        <div>
-          <h3 className="text-sm font-semibold text-white">
-            Multi-Model Spread Matrix · {band.label} ({formatElevM(band.elevation_ft, band.elevation_m)})
-          </h3>
-          <p className="text-xs text-slate-400">
-            All models run through unified wet-bulb SLR + wind compaction physics. Partial-horizon models (like HRRR 44h) only enter shorter consensus windows.
-          </p>
-        </div>
-        <span className="rounded-md border border-slate-700/70 bg-slate-950/75 px-2.5 py-1 text-xs text-slate-300 tabular-nums">
-          {models.length} weather sources
-        </span>
+      <div className="pb-3 border-b border-slate-800/70">
+        <h3 className="text-sm font-semibold text-white">
+          Multi-Model Spread Matrix · {band.label} ({formatElevM(band.elevation_ft, band.elevation_m)})
+        </h3>
+        <p className="text-xs text-slate-400">
+          All models run through unified wet-bulb SLR + wind compaction physics. Partial-horizon models (like HRRR 44h) only enter shorter consensus windows.
+        </p>
       </div>
 
       <div className="mt-3 overflow-x-auto">

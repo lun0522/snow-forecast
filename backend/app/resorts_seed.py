@@ -157,4 +157,34 @@ SEED_RESORTS: list[dict[str, Any]] = [
             },
         },
     },
+    {
+        "id": "whistler-blackcomb",
+        "name": "Whistler Blackcomb",
+        "region": "Coast Mountains",
+        "state": "BC",
+        "timezone": "America/Vancouver",
+        "bands": {
+            "base": {
+                "label": "Whistler Village Base",
+                "lat": 50.1128,
+                "lon": -122.9543,
+                "reported_elevation_ft": 2214,
+                "reported_elevation_m": round(feet_to_meters(2214), 1),
+            },
+            "mid": {
+                "label": "Roundhouse Lodge",
+                "lat": 50.0696,
+                "lon": -122.9465,
+                "reported_elevation_ft": 6069,
+                "reported_elevation_m": round(feet_to_meters(6069), 1),
+            },
+            "summit": {
+                "label": "Whistler Peak",
+                "lat": 50.0591,
+                "lon": -122.9569,
+                "reported_elevation_ft": 7160,
+                "reported_elevation_m": round(feet_to_meters(7160), 1),
+            },
+        },
+    },
 ]

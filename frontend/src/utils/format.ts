@@ -1,4 +1,7 @@
-import type { ConfidenceLevel, RainSnowRisk } from "../types";
+import type { RainSnowRisk } from "../types";
+
+export type SlrQuality = "wet" | "normal" | "powder";
+export type WindRiskLevel = "none" | "caution" | "high";
 
 export function inToCm(inches: number): number {
   return inches * 2.54;
@@ -85,29 +88,6 @@ export function formatWindKmh(mph: number | null | undefined): string {
   return `${Math.round(mphToKmh(mph))} km/h`;
 }
 
-export function formatDeltaSnowCm(deltaIn: number | null | undefined): string {
-  if (deltaIn === null || deltaIn === undefined || Number.isNaN(deltaIn)) {
-    return "0.0 cm";
-  }
-  const cm = inToCm(deltaIn);
-  const sign = cm > 0 ? "+" : "";
-  return `${sign}${cm.toFixed(1)} cm`;
-}
-
-export function formatUtcTimestamp(iso: string | null | undefined, tz = "America/Los_Angeles"): string {
-  if (!iso) return "Unknown";
-  const dt = new Date(iso);
-  if (Number.isNaN(dt.getTime())) return iso;
-  return new Intl.DateTimeFormat("en-US", {
-    timeZone: tz,
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZoneName: "short",
-  }).format(dt);
-}
-
 export function formatLocalHourTick(timeUtcIso: string, tz: string, includeDate = false): string {
   const dt = new Date(timeUtcIso);
   if (Number.isNaN(dt.getTime())) return timeUtcIso;
@@ -124,10 +104,43 @@ export function formatLocalHourTick(timeUtcIso: string, tz: string, includeDate 
   }).format(dt);
 }
 
+export function getSlrQuality(avgSlr: number): SlrQuality {
+  const rounded = Number(avgSlr.toFixed(1));
+  if (rounded < 10.0) {
+    return "wet";
+  }
+  if (rounded >= 15.0) {
+    return "powder";
+  }
+  return "normal";
+}
+
+export function slrBadgeClass(quality: SlrQuality): string {
+  switch (quality) {
+    case "wet":
+      return "bg-rose-500/15 text-rose-300 border-rose-500/30";
+    case "normal":
+      return "bg-amber-500/15 text-amber-300 border-amber-500/30";
+    case "powder":
+      return "bg-sky-500/15 text-sky-300 border-sky-500/30";
+  }
+}
+
+export function slrTitle(quality: SlrQuality): string {
+  switch (quality) {
+    case "wet":
+      return "Wet / dense snow (<10:1)";
+    case "normal":
+      return "Normal snow density (10–14.9:1)";
+    case "powder":
+      return "Light powder (≥15:1)";
+  }
+}
+
 export function riskBadgeClass(risk: RainSnowRisk): string {
   switch (risk) {
     case "snow":
-      return "bg-sky-500/15 text-sky-300 border-sky-500/30";
+      return "";
     case "mixed":
       return "bg-amber-500/15 text-amber-300 border-amber-500/30";
     case "rain":
@@ -135,13 +148,50 @@ export function riskBadgeClass(risk: RainSnowRisk): string {
   }
 }
 
-export function confidenceBadgeClass(confidence: ConfidenceLevel): string {
-  switch (confidence) {
+export function riskLabel(risk: RainSnowRisk): string {
+  switch (risk) {
+    case "snow":
+      return "Snow";
+    case "mixed":
+      return "Mixed rain/snow";
+    case "rain":
+      return "Rain";
+  }
+}
+
+export function getWindRiskLevel(
+  maxWindMph: number | null | undefined,
+  maxGustMph: number | null | undefined,
+): WindRiskLevel {
+  const windKmh = maxWindMph != null ? mphToKmh(maxWindMph) : 0;
+  const gustKmh = maxGustMph != null ? mphToKmh(maxGustMph) : 0;
+  if (gustKmh >= 72 || windKmh >= 55) {
+    return "high";
+  }
+  if (gustKmh >= 55 || windKmh >= 40) {
+    return "caution";
+  }
+  return "none";
+}
+
+export function windRiskBadgeClass(level: WindRiskLevel): string {
+  switch (level) {
     case "high":
-      return "bg-emerald-500/15 text-emerald-300 border-emerald-500/30";
-    case "medium":
-      return "bg-amber-500/15 text-amber-300 border-amber-500/30";
-    case "low":
       return "bg-rose-500/15 text-rose-300 border-rose-500/30";
+    case "caution":
+      return "bg-amber-500/15 text-amber-300 border-amber-500/30";
+    case "none":
+      return "";
+  }
+}
+
+export function windRiskTitle(level: WindRiskLevel): string | undefined {
+  switch (level) {
+    case "high":
+      return "Very likely lifts will close (gusts ≥72 km/h or wind ≥55 km/h)";
+    case "caution":
+      return "Lifts may close, especially high-elevation ones (gusts ≥55 km/h or wind ≥40 km/h)";
+    case "none":
+      return undefined;
   }
 }
