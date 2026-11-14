@@ -1,10 +1,26 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
+  html {
+    color-scheme: light;
+  }
+
+  html.dark {
+    color-scheme: dark;
+  }
+
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
-    background: radial-gradient(circle at 20% 0%, #0f1b2e 0%, #090f18 55%);
+    background: radial-gradient(circle at 20% 0%, #eff6ff 0%, #f8fafc 48%, #f1f5f9 100%);
+    color: #0f172a;
     min-height: 100vh;
+  }
+
+  html.dark body {
+    background: radial-gradient(circle at 20% 0%, #0f1b2e 0%, #090f18 55%);
+    color: #f1f5f9;
   }
 
   .tabular-nums {
@@ -18,12 +34,22 @@
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(15, 23, 42, 0.5);
+  background: rgba(226, 232, 240, 0.7);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.28);
+  background: rgba(100, 116, 139, 0.35);
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.55);
+}
+
+html.dark ::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.5);
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.28);
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
   background: rgba(148, 163, 184, 0.45);
 }

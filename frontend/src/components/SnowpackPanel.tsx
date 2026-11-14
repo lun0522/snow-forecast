@@ -12,13 +12,13 @@ export function SnowpackPanel({ snowpack, timezone }: SnowpackPanelProps) {
   }
 
   return (
-    <div className="rounded-xl border border-slate-800/90 bg-slate-900/65 px-4 py-3.5 md:px-5">
+    <div className="rounded-xl border border-slate-200/90 bg-white/90 px-4 py-3.5 shadow-xs md:px-5 dark:border-slate-800/90 dark:bg-slate-900/65 dark:shadow-none">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div className="flex flex-wrap items-baseline gap-2">
-          <h3 className="text-sm font-semibold text-white">
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
             {snowpack.label || "Nearby Snow Telemetry (Natural)"}
           </h3>
-          <span className="text-xs text-slate-400">
+          <span className="text-xs text-slate-500 dark:text-slate-400">
             · {snowpack.source_name} (excludes snowmaking &amp; groomed trails)
           </span>
         </div>
@@ -32,13 +32,13 @@ export function SnowpackPanel({ snowpack, timezone }: SnowpackPanelProps) {
             return (
               <div
                 key={st.id}
-                className="flex items-center justify-between gap-3 rounded-lg border border-slate-800/80 bg-slate-950/60 px-3 py-2"
+                className="flex items-center justify-between gap-3 rounded-lg border border-slate-200/90 bg-slate-50/90 px-3 py-2 dark:border-slate-800/80 dark:bg-slate-950/60"
               >
                 <div className="min-w-0">
-                  <div className="truncate text-xs font-medium text-slate-100">
+                  <div className="truncate text-xs font-medium text-slate-900 dark:text-slate-100">
                     {st.name}
                   </div>
-                  <div className="mt-0.5 text-[11px] text-slate-400 tabular-nums">
+                  <div className="mt-0.5 text-[11px] text-slate-500 tabular-nums dark:text-slate-400">
                     {Math.round(st.elevation_m).toLocaleString()} m · {st.distance_km.toFixed(1)} km ·{" "}
                     {formatLocalHourTick(st.observed_at_utc, timezone, true)}
                   </div>
@@ -46,22 +46,22 @@ export function SnowpackPanel({ snowpack, timezone }: SnowpackPanelProps) {
 
                 <div className="shrink-0 text-right tabular-nums">
                   <div className="flex items-baseline justify-end gap-1.5">
-                    <span className="text-sm font-semibold text-sky-300">
+                    <span className="text-sm font-semibold text-sky-700 dark:text-sky-300">
                       {st.snow_depth_cm.toFixed(1)} cm
                     </span>
                     {hasDelta && (
                       <span
                         className={`rounded px-1 py-0.5 text-[10px] font-medium ${
                           delta > 0
-                            ? "bg-sky-500/15 text-sky-300"
-                            : "bg-amber-500/15 text-amber-300"
+                            ? "bg-sky-100 text-sky-800 dark:bg-sky-500/15 dark:text-sky-300"
+                            : "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300"
                         }`}
                       >
                         {delta > 0 ? `+${delta.toFixed(1)}` : delta.toFixed(1)} 24h
                       </span>
                     )}
                   </div>
-                  <div className="mt-0.5 text-[11px] text-slate-400">
+                  <div className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
                     {st.swe_mm !== null ? `${st.swe_mm.toFixed(0)} mm SWE` : st.id}
                   </div>
                 </div>

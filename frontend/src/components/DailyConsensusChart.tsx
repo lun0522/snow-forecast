@@ -25,6 +25,7 @@ interface DailyConsensusChartProps {
   elevationFt: number;
   elevationM?: number | null;
   bandLabel: string;
+  isDark?: boolean;
 }
 
 export function DailyConsensusChart({
@@ -32,8 +33,31 @@ export function DailyConsensusChart({
   elevationFt,
   elevationM,
   bandLabel,
+  isDark = false,
 }: DailyConsensusChartProps) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+
+  const svgColors = isDark
+    ? {
+        gridStroke: "rgba(148, 163, 184, 0.14)",
+        hoverBg: "rgba(56, 189, 248, 0.08)",
+        whiskerStem: "rgba(226, 232, 240, 0.65)",
+        whiskerCap: "rgba(226, 232, 240, 0.85)",
+        snowBar: "#38bdf8",
+        snowBarHover: "#7dd3fc",
+        mixedBar: "#f59e0b",
+        rainBar: "#f43f5e",
+      }
+    : {
+        gridStroke: "rgba(100, 116, 139, 0.18)",
+        hoverBg: "rgba(2, 132, 199, 0.08)",
+        whiskerStem: "rgba(51, 65, 85, 0.72)",
+        whiskerCap: "rgba(30, 41, 59, 0.88)",
+        snowBar: "#0284c7",
+        snowBarHover: "#0369a1",
+        mixedBar: "#d97706",
+        rainBar: "#e11d48",
+      };
 
   if (!daily.length) {
     return null;
@@ -63,12 +87,12 @@ export function DailyConsensusChart({
   }));
 
   return (
-    <div className="rounded-xl border border-slate-800/90 bg-slate-900/65 p-4 md:p-5">
-      <div className="pb-3 border-b border-slate-800/70">
-        <h3 className="text-sm font-semibold text-white">
+    <div className="rounded-xl border border-slate-200/90 bg-white/90 p-4 shadow-xs md:p-5 dark:border-slate-800/90 dark:bg-slate-900/65 dark:shadow-none">
+      <div className="pb-3 border-b border-slate-200/80 dark:border-slate-800/70">
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
           7-Day Local Forecast Consensus · {bandLabel} ({formatElevM(elevationFt, elevationM)})
         </h3>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
           Bars = multi-model median snowfall (cm); whiskers = min–max model range per local calendar day
         </p>
       </div>
@@ -83,14 +107,14 @@ export function DailyConsensusChart({
                 x2={svgW - padR}
                 y1={tick.y}
                 y2={tick.y}
-                stroke="rgba(148, 163, 184, 0.14)"
+                stroke={svgColors.gridStroke}
                 strokeDasharray="3 3"
               />
               <text
                 x={padL - 6}
                 y={tick.y + 3}
                 textAnchor="end"
-                className="fill-slate-500 text-[10px] tabular-nums"
+                className="fill-slate-500 text-[10px] tabular-nums dark:fill-slate-400"
               >
                 {tick.val} cm
               </text>
@@ -111,12 +135,12 @@ export function DailyConsensusChart({
 
             const fillColor =
               day.rain_snow_risk === "rain"
-                ? "#f43f5e"
+                ? svgColors.rainBar
                 : day.rain_snow_risk === "mixed"
-                  ? "#f59e0b"
+                  ? svgColors.mixedBar
                   : isHovered
-                    ? "#7dd3fc"
-                    : "#38bdf8";
+                    ? svgColors.snowBarHover
+                    : svgColors.snowBar;
 
             return (
               <g
@@ -131,7 +155,7 @@ export function DailyConsensusChart({
                   width={Math.max(10, colW - 4)}
                   height={plotH}
                   rx={6}
-                  fill={isHovered ? "rgba(56, 189, 248, 0.08)" : "transparent"}
+                  fill={isHovered ? svgColors.hoverBg : "transparent"}
                 />
 
                 {medCm > 0.05 && (
@@ -153,7 +177,7 @@ export function DailyConsensusChart({
                       x2={cx}
                       y1={yMax}
                       y2={yMin}
-                      stroke="rgba(226, 232, 240, 0.65)"
+                      stroke={svgColors.whiskerStem}
                       strokeWidth={1.5}
                     />
                     <line
@@ -161,7 +185,7 @@ export function DailyConsensusChart({
                       x2={cx + 5}
                       y1={yMax}
                       y2={yMax}
-                      stroke="rgba(226, 232, 240, 0.85)"
+                      stroke={svgColors.whiskerCap}
                       strokeWidth={1.5}
                     />
                     <line
@@ -169,7 +193,7 @@ export function DailyConsensusChart({
                       x2={cx + 5}
                       y1={yMin}
                       y2={yMin}
-                      stroke="rgba(226, 232, 240, 0.65)"
+                      stroke={svgColors.whiskerStem}
                       strokeWidth={1.5}
                     />
                   </g>
@@ -179,7 +203,7 @@ export function DailyConsensusChart({
                   x={cx}
                   y={Math.max(11, Math.min(yMed, yMax) - 5)}
                   textAnchor="middle"
-                  className="fill-slate-100 text-[10px] font-semibold tabular-nums"
+                  className="fill-slate-800 text-[10px] font-semibold tabular-nums dark:fill-slate-100"
                 >
                   {medCm >= 0.1 ? `${medCm.toFixed(1)} cm` : "0 cm"}
                 </text>
@@ -188,7 +212,7 @@ export function DailyConsensusChart({
                   x={cx}
                   y={svgH - 12}
                   textAnchor="middle"
-                  className="fill-slate-300 text-[10px] font-medium"
+                  className="fill-slate-600 text-[10px] font-medium dark:fill-slate-300"
                 >
                   {day.day_name}
                   {day.is_partial ? "*" : ""}
@@ -203,7 +227,7 @@ export function DailyConsensusChart({
       <div className="mt-4 overflow-x-auto">
         <table className="w-full min-w-[660px] text-left text-xs">
           <thead>
-            <tr className="border-b border-slate-800 text-[11px] uppercase tracking-wider text-slate-400">
+            <tr className="border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:text-slate-400">
               <th className="py-2 pr-3 font-medium">Local Day</th>
               <th className="py-2 px-3 font-medium">Snow Median (Range)</th>
               <th className="py-2 px-3 font-medium">QPF</th>
@@ -213,7 +237,7 @@ export function DailyConsensusChart({
               <th className="py-2 pl-3 font-medium">Snow Level</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800/60 tabular-nums">
+          <tbody className="divide-y divide-slate-200/80 tabular-nums dark:divide-slate-800/60">
             {daily.map((day, idx) => {
               const slrQuality = getSlrQuality(day.avg_slr);
               const slrBadge = slrBadgeClass(slrQuality);
@@ -226,25 +250,27 @@ export function DailyConsensusChart({
                   onMouseEnter={() => setHoveredIdx(idx)}
                   onMouseLeave={() => setHoveredIdx(null)}
                   className={`transition ${
-                    hoveredIdx === idx ? "bg-sky-500/10" : "hover:bg-slate-800/35"
+                    hoveredIdx === idx ? "bg-sky-50/90 dark:bg-sky-500/10" : "hover:bg-slate-50 dark:hover:bg-slate-800/35"
                   }`}
                 >
-                  <td className="py-2 pr-3 font-medium text-slate-100">
+                  <td className="py-2 pr-3 font-medium text-slate-900 dark:text-slate-100">
                     {day.day_name}
                     {day.is_partial && (
                       <span className="ml-1.5 text-[10px] text-slate-500">({day.hours_in_bucket}h)</span>
                     )}
                   </td>
                   <td className="py-2 px-3">
-                    <span className="font-semibold text-sky-300">
+                    <span className="font-semibold text-sky-700 dark:text-sky-300">
                       {formatSnowCm(day.snow_median_in)}
                     </span>
-                    <span className="ml-1.5 text-slate-400">
+                    <span className="ml-1.5 text-slate-500 dark:text-slate-400">
                       ({inToCm(day.snow_min_in).toFixed(1)}–{inToCm(day.snow_max_in).toFixed(1)} cm)
                     </span>
                   </td>
-                  <td className="py-2 px-3 text-slate-300">{formatPrecipMm(day.precip_median_in, 1)}</td>
-                  <td className="py-2 px-3">
+                  <td className="py-2 px-3 text-slate-700 dark:text-slate-300">
+                    {formatPrecipMm(day.precip_median_in, 1)}
+                  </td>
+                  <td className="py-2 px-3 text-slate-700 dark:text-slate-300">
                     <span
                       title={slrTitle(slrQuality)}
                       className={slrBadge ? `${BADGE_PILL_BASE} ${slrBadge}` : "whitespace-nowrap"}
@@ -252,7 +278,7 @@ export function DailyConsensusChart({
                       {day.avg_slr.toFixed(1)}:1
                     </span>
                   </td>
-                  <td className="py-2 px-3 text-slate-300">
+                  <td className="py-2 px-3 text-slate-700 dark:text-slate-300">
                     <span
                       title={`Phase: ${riskLabel(day.rain_snow_risk)}`}
                       className={tempBadge ? `${BADGE_PILL_BASE} ${tempBadge}` : "whitespace-nowrap"}
@@ -260,7 +286,7 @@ export function DailyConsensusChart({
                       {formatTempC(day.temp_min_f)} / {formatTempC(day.temp_max_f)}
                     </span>
                   </td>
-                  <td className="py-2 px-3 text-slate-300">
+                  <td className="py-2 px-3 text-slate-700 dark:text-slate-300">
                     <span
                       title={windRiskTitle(windRisk)}
                       className={windBadge ? `${BADGE_PILL_BASE} ${windBadge}` : "whitespace-nowrap"}
@@ -269,7 +295,7 @@ export function DailyConsensusChart({
                       {day.max_gust_mph !== null ? ` (${Math.round(mphToKmh(day.max_gust_mph))}g)` : ""}
                     </span>
                   </td>
-                  <td className="py-2 pl-3 text-slate-300">
+                  <td className="py-2 pl-3 text-slate-700 dark:text-slate-300">
                     {formatElevRangeM(day.snow_level_min_ft, day.snow_level_max_ft)}
                   </td>
                 </tr>
@@ -280,32 +306,32 @@ export function DailyConsensusChart({
       </div>
 
       {/* Compact Color Key for SLR, Temp Phase & Wind Lift Risk */}
-      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-5 gap-y-1.5 text-[11px] text-slate-400">
+      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-5 gap-y-1.5 text-[11px] text-slate-500 dark:text-slate-400">
         <div className="flex flex-wrap items-center gap-3">
           <span>SLR:</span>
           <span className="inline-flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-xs bg-amber-400/80" /> Wet (&lt;10:1)
+            <span className="inline-block h-2 w-2 rounded-xs bg-amber-500 dark:bg-amber-400/80" /> Wet (&lt;10:1)
           </span>
           <span className="inline-flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-xs bg-sky-400/80" /> Powder (≥15:1)
+            <span className="inline-block h-2 w-2 rounded-xs bg-sky-500 dark:bg-sky-400/80" /> Powder (≥15:1)
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <span>Temp:</span>
           <span className="inline-flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-xs bg-amber-400/80" /> Mixed
+            <span className="inline-block h-2 w-2 rounded-xs bg-amber-500 dark:bg-amber-400/80" /> Mixed
           </span>
           <span className="inline-flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-xs bg-rose-400/80" /> Rain
+            <span className="inline-block h-2 w-2 rounded-xs bg-rose-500 dark:bg-rose-400/80" /> Rain
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <span>Wind lift risk:</span>
           <span className="inline-flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-xs bg-amber-400/80" /> High lifts may close (≥55 km/h gust)
+            <span className="inline-block h-2 w-2 rounded-xs bg-amber-500 dark:bg-amber-400/80" /> High lifts may close (≥55 km/h gust)
           </span>
           <span className="inline-flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-xs bg-rose-400/80" /> Lifts likely closed (≥72 km/h gust)
+            <span className="inline-block h-2 w-2 rounded-xs bg-rose-500 dark:bg-rose-400/80" /> Lifts likely closed (≥72 km/h gust)
           </span>
         </div>
       </div>

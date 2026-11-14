@@ -18,6 +18,7 @@ interface HourlyMeteogramProps {
   baseElevFt: number;
   midElevFt: number;
   summitElevFt: number;
+  isDark?: boolean;
 }
 
 type HorizonOption = 48 | 72 | 168;
@@ -29,9 +30,42 @@ export function HourlyMeteogram({
   baseElevFt,
   midElevFt,
   summitElevFt,
+  isDark = false,
 }: HourlyMeteogramProps) {
   const [horizon, setHorizon] = useState<HorizonOption>(168);
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+
+  const svgColors = isDark
+    ? {
+        gridStroke: "rgba(148, 163, 184, 0.12)",
+        dayDivider: "rgba(148, 163, 184, 0.14)",
+        maxRateShade: "rgba(56, 189, 248, 0.16)",
+        medRateBar: "#38bdf8",
+        cumLine: "#67e8f9",
+        settledLine: "#34d399",
+        snowLvlLine: "#fbbf24",
+        tempLine: "#c084fc",
+        freezingLine: "rgba(167, 139, 250, 0.28)",
+        summitBand: "rgba(56, 189, 248, 0.45)",
+        midBand: "rgba(148, 163, 184, 0.35)",
+        baseBand: "rgba(251, 146, 60, 0.45)",
+        crosshair: "rgba(226, 232, 240, 0.7)",
+      }
+    : {
+        gridStroke: "rgba(100, 116, 139, 0.18)",
+        dayDivider: "rgba(100, 116, 139, 0.2)",
+        maxRateShade: "rgba(14, 165, 233, 0.18)",
+        medRateBar: "#0284c7",
+        cumLine: "#0891b2",
+        settledLine: "#059669",
+        snowLvlLine: "#d97706",
+        tempLine: "#7c3aed",
+        freezingLine: "rgba(124, 58, 237, 0.35)",
+        summitBand: "rgba(2, 132, 199, 0.48)",
+        midBand: "rgba(100, 116, 139, 0.42)",
+        baseBand: "rgba(234, 88, 12, 0.48)",
+        crosshair: "rgba(15, 23, 42, 0.55)",
+      };
 
   const visible = useMemo(() => hourly.slice(0, horizon), [hourly, horizon]);
 
@@ -144,17 +178,17 @@ export function HourlyMeteogram({
   };
 
   return (
-    <div className="rounded-xl border border-slate-800/90 bg-slate-900/65 p-4 md:p-5 space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/70 pb-3">
+    <div className="rounded-xl border border-slate-200/90 bg-white/90 p-4 shadow-xs md:p-5 space-y-4 dark:border-slate-800/90 dark:bg-slate-900/65 dark:shadow-none">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-3 dark:border-slate-800/70">
         <div>
-          <h3 className="text-sm font-semibold text-white">
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
             Hourly Storm Meteogram &amp; Snow Level · {bandLabel}
           </h3>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
             Scrub across hours to inspect snowfall intensity (cm/h), cumulative vs settled depth (cm), snow level (m) vs bands, and temp (°C)
           </p>
         </div>
-        <div className="inline-flex rounded-lg border border-slate-700/80 bg-slate-950/75 p-0.5 text-xs">
+        <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100/90 p-0.5 text-xs dark:border-slate-700/80 dark:bg-slate-950/75">
           {([48, 72, 168] as HorizonOption[]).map((h) => (
             <button
               key={h}
@@ -164,7 +198,9 @@ export function HourlyMeteogram({
                 setHoverIdx(null);
               }}
               className={`rounded-md px-2.5 py-1 font-medium transition ${
-                horizon === h ? "bg-sky-500/20 text-sky-200" : "text-slate-400 hover:text-slate-200"
+                horizon === h
+                  ? "bg-white text-sky-700 shadow-xs ring-1 ring-slate-200/80 dark:bg-sky-500/20 dark:text-sky-200 dark:ring-0"
+                  : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
               }`}
             >
               {h === 168 ? "7d (168h)" : `${h}h`}
@@ -174,36 +210,47 @@ export function HourlyMeteogram({
       </div>
 
       {/* Live Scrub Readout Strip */}
-      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-800 bg-slate-950/80 px-3.5 py-2 text-xs">
+      <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs dark:border-slate-800 dark:bg-slate-950/80">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-          <span className="font-semibold text-sky-200">
+          <span className="font-semibold text-slate-900 dark:text-sky-200">
             {formatLocalHourTick(activePt.time_utc, timezone, true)}
           </span>
-          <span className="tabular-nums text-slate-300">
+          <span className="tabular-nums text-slate-600 dark:text-slate-300">
             Rate:{" "}
-            <strong className="text-sky-300">{inToCm(activePt.snow_median_in).toFixed(1)} cm/h</strong>{" "}
+            <strong className="text-sky-700 dark:text-sky-300">
+              {inToCm(activePt.snow_median_in).toFixed(1)} cm/h
+            </strong>{" "}
             <span className="text-slate-500">
               ({inToCm(activePt.snow_min_in).toFixed(1)}–{inToCm(activePt.snow_max_in).toFixed(1)})
             </span>
           </span>
-          <span className="tabular-nums text-slate-300">
-            Cum: <strong className="text-cyan-200">{formatSnowCm(activeCumIn)}</strong>
+          <span className="tabular-nums text-slate-600 dark:text-slate-300">
+            Cum: <strong className="text-cyan-700 dark:text-cyan-200">{formatSnowCm(activeCumIn)}</strong>
           </span>
-          <span className="tabular-nums text-slate-300">
-            Settled: <strong className="text-emerald-300">{formatSnowCm(activePt.settled_snow_in)}</strong>
+          <span className="tabular-nums text-slate-600 dark:text-slate-300">
+            Settled:{" "}
+            <strong className="text-emerald-700 dark:text-emerald-300">
+              {formatSnowCm(activePt.settled_snow_in)}
+            </strong>
           </span>
         </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 tabular-nums text-slate-300">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 tabular-nums text-slate-600 dark:text-slate-300">
           <span>
-            Temp: <strong className="text-violet-300">{formatTempC(activePt.temp_median_f)}</strong>
+            Temp:{" "}
+            <strong className="text-violet-700 dark:text-violet-300">
+              {formatTempC(activePt.temp_median_f)}
+            </strong>
           </span>
           <span>
-            Snow Lvl: <strong className="text-amber-300">{formatElevM(activePt.snow_level_median_ft)}</strong>
+            Snow Lvl:{" "}
+            <strong className="text-amber-700 dark:text-amber-300">
+              {formatElevM(activePt.snow_level_median_ft)}
+            </strong>
           </span>
           <span>
-            Wind: <strong>{formatWindKmh(activePt.wind_median_mph)}</strong>
+            Wind: <strong className="text-slate-900 dark:text-slate-100">{formatWindKmh(activePt.wind_median_mph)}</strong>
           </span>
-          <span className="text-slate-400">
+          <span className="text-slate-500 dark:text-slate-400">
             SLR {activePt.slr_median !== null ? `${activePt.slr_median.toFixed(1)}:1` : "—"} ·{" "}
             {activePt.model_count}m
           </span>
@@ -212,17 +259,19 @@ export function HourlyMeteogram({
 
       {/* Panel A: Snowfall Rate + Cumulative vs Settled */}
       <div className="space-y-1">
-        <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-400">
-          <span className="font-medium text-slate-300">Snowfall Rate (cm/h) &amp; Storm Total</span>
+        <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+          <span className="font-medium text-slate-700 dark:text-slate-300">
+            Snowfall Rate (cm/h) &amp; Storm Total
+          </span>
           <div className="flex items-center gap-4">
             <span className="inline-flex items-center gap-1.5">
-              <span className="inline-block h-2 w-2 rounded-xs bg-sky-400" /> Hourly median
+              <span className="inline-block h-2 w-2 rounded-xs bg-sky-600 dark:bg-sky-400" /> Hourly median
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="inline-block h-0.5 w-4 bg-cyan-300" /> Cumulative snow
+              <span className="inline-block h-0.5 w-4 bg-cyan-600 dark:bg-cyan-300" /> Cumulative snow
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="inline-block h-0.5 w-4 border-t-2 border-dashed border-emerald-400" />{" "}
+              <span className="inline-block h-0.5 w-4 border-t-2 border-dashed border-emerald-600 dark:border-emerald-400" />{" "}
               Settled depth
             </span>
           </div>
@@ -239,17 +288,22 @@ export function HourlyMeteogram({
                     x2={svgW - padR}
                     y1={y}
                     y2={y}
-                    stroke="rgba(148, 163, 184, 0.12)"
+                    stroke={svgColors.gridStroke}
                     strokeDasharray="3 3"
                   />
-                  <text x={padL - 6} y={y + 3} textAnchor="end" className="fill-sky-400/80 text-[10px] tabular-nums">
+                  <text
+                    x={padL - 6}
+                    y={y + 3}
+                    textAnchor="end"
+                    className="fill-sky-600 text-[10px] tabular-nums dark:fill-sky-400/80"
+                  >
                     {(maxRateCm * frac).toFixed(1)}cm/h
                   </text>
                   <text
                     x={svgW - padR + 6}
                     y={y + 3}
                     textAnchor="start"
-                    className="fill-cyan-300/80 text-[10px] tabular-nums"
+                    className="fill-cyan-700 text-[10px] tabular-nums dark:fill-cyan-300/80"
                   >
                     {Math.round(maxCumCm * frac)}cm
                   </text>
@@ -264,7 +318,7 @@ export function HourlyMeteogram({
                 x2={xFor(i)}
                 y1={sPadT}
                 y2={sPadT + sPlotH}
-                stroke="rgba(148, 163, 184, 0.14)"
+                stroke={svgColors.dayDivider}
               />
             ))}
 
@@ -282,7 +336,7 @@ export function HourlyMeteogram({
                       y={yMax}
                       width={bw}
                       height={Math.max(1, yZero - yMax)}
-                      fill="rgba(56, 189, 248, 0.16)"
+                      fill={svgColors.maxRateShade}
                     />
                   )}
                   {pt.snow_median_in > 0.01 && (
@@ -291,7 +345,7 @@ export function HourlyMeteogram({
                       y={yMed}
                       width={bw}
                       height={Math.max(1, yZero - yMed)}
-                      fill="#38bdf8"
+                      fill={svgColors.medRateBar}
                       fillOpacity={0.85}
                     />
                   )}
@@ -299,8 +353,8 @@ export function HourlyMeteogram({
               );
             })}
 
-            <path d={cumPath} fill="none" stroke="#67e8f9" strokeWidth={2} />
-            <path d={settledPath} fill="none" stroke="#34d399" strokeWidth={1.75} strokeDasharray="5 3" />
+            <path d={cumPath} fill="none" stroke={svgColors.cumLine} strokeWidth={2} />
+            <path d={settledPath} fill="none" stroke={svgColors.settledLine} strokeWidth={1.75} strokeDasharray="5 3" />
 
             {hoverIdx !== null && (
               <line
@@ -308,7 +362,7 @@ export function HourlyMeteogram({
                 x2={xFor(activeIdx)}
                 y1={sPadT}
                 y2={sPadT + sPlotH}
-                stroke="rgba(226, 232, 240, 0.7)"
+                stroke={svgColors.crosshair}
                 strokeWidth={1}
               />
             )}
@@ -329,14 +383,16 @@ export function HourlyMeteogram({
 
       {/* Panel B: Snow Level (m) vs Elevation Bands + Air Temp (°C) */}
       <div className="space-y-1">
-        <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-400">
-          <span className="font-medium text-slate-300">Snow Level (m) vs Resort Elevations &amp; Temp (°C)</span>
+        <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
+          <span className="font-medium text-slate-700 dark:text-slate-300">
+            Snow Level (m) vs Resort Elevations &amp; Temp (°C)
+          </span>
           <div className="flex items-center gap-4">
             <span className="inline-flex items-center gap-1.5">
-              <span className="inline-block h-0.5 w-4 bg-amber-400" /> Snow level (m)
+              <span className="inline-block h-0.5 w-4 bg-amber-600 dark:bg-amber-400" /> Snow level (m)
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="inline-block h-0.5 w-4 bg-violet-400" /> Air temp (°C)
+              <span className="inline-block h-0.5 w-4 bg-violet-600 dark:bg-violet-400" /> Air temp (°C)
             </span>
             <span className="text-slate-500">Dashed lines: Base / Mid / Summit (m)</span>
           </div>
@@ -345,9 +401,9 @@ export function HourlyMeteogram({
         <div className="overflow-x-auto">
           <svg viewBox={`0 0 ${svgW} ${lvlH}`} className="w-full min-w-[600px] select-none">
             {[
-              { label: "Summit", elevM: summitElevM, color: "rgba(56, 189, 248, 0.45)" },
-              { label: "Mid", elevM: midElevM, color: "rgba(148, 163, 184, 0.35)" },
-              { label: "Base", elevM: baseElevM, color: "rgba(251, 146, 60, 0.45)" },
+              { label: "Summit", elevM: summitElevM, color: svgColors.summitBand },
+              { label: "Mid", elevM: midElevM, color: svgColors.midBand },
+              { label: "Base", elevM: baseElevM, color: svgColors.baseBand },
             ].map((band) => {
               const y = yForElevM(band.elevM);
               return (
@@ -361,7 +417,12 @@ export function HourlyMeteogram({
                     strokeDasharray="4 4"
                     strokeWidth={1}
                   />
-                  <text x={padL - 5} y={y + 3} textAnchor="end" className="fill-slate-400 text-[9.5px] tabular-nums">
+                  <text
+                    x={padL - 5}
+                    y={y + 3}
+                    textAnchor="end"
+                    className="fill-slate-500 text-[9.5px] tabular-nums dark:fill-slate-400"
+                  >
                     {Math.round(band.elevM)}m
                   </text>
                 </g>
@@ -374,7 +435,7 @@ export function HourlyMeteogram({
                 x={svgW - padR + 6}
                 y={yForTempC(tVal) + 3}
                 textAnchor="start"
-                className="fill-violet-300/80 text-[10px] tabular-nums"
+                className="fill-violet-700 text-[10px] tabular-nums dark:fill-violet-300/80"
               >
                 {Math.round(tVal)}°C
               </text>
@@ -387,7 +448,7 @@ export function HourlyMeteogram({
                 x2={svgW - padR}
                 y1={yForTempC(0)}
                 y2={yForTempC(0)}
-                stroke="rgba(167, 139, 250, 0.28)"
+                stroke={svgColors.freezingLine}
                 strokeDasharray="2 4"
               />
             )}
@@ -401,17 +462,17 @@ export function HourlyMeteogram({
                     x2={x}
                     y1={lPadT}
                     y2={lPadT + lPlotH}
-                    stroke="rgba(148, 163, 184, 0.14)"
+                    stroke={svgColors.dayDivider}
                   />
-                  <text x={x + 3} y={lvlH - 8} className="fill-slate-400 text-[10px]">
+                  <text x={x + 3} y={lvlH - 8} className="fill-slate-500 text-[10px] dark:fill-slate-400">
                     {pt.local_date.slice(5)}
                   </text>
                 </g>
               );
             })}
 
-            {snowLvlPath && <path d={snowLvlPath} fill="none" stroke="#fbbf24" strokeWidth={2} />}
-            {tempPath && <path d={tempPath} fill="none" stroke="#c084fc" strokeWidth={1.6} opacity={0.85} />}
+            {snowLvlPath && <path d={snowLvlPath} fill="none" stroke={svgColors.snowLvlLine} strokeWidth={2} />}
+            {tempPath && <path d={tempPath} fill="none" stroke={svgColors.tempLine} strokeWidth={1.6} opacity={0.85} />}
 
             {hoverIdx !== null && (
               <line
@@ -419,7 +480,7 @@ export function HourlyMeteogram({
                 x2={xFor(activeIdx)}
                 y1={lPadT}
                 y2={lPadT + lPlotH}
-                stroke="rgba(226, 232, 240, 0.7)"
+                stroke={svgColors.crosshair}
                 strokeWidth={1}
               />
             )}

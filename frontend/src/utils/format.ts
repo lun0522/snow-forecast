@@ -115,14 +115,21 @@ export function getSlrQuality(avgSlr: number): SlrQuality {
   return "normal";
 }
 
+const AMBER_BADGE =
+  "bg-amber-100/80 text-amber-800 border-amber-300 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30";
+const SKY_BADGE =
+  "bg-sky-100/80 text-sky-800 border-sky-300 dark:bg-sky-500/15 dark:text-sky-300 dark:border-sky-500/30";
+const ROSE_BADGE =
+  "bg-rose-100/80 text-rose-800 border-rose-300 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/30";
+
 export function slrBadgeClass(quality: SlrQuality): string {
   switch (quality) {
     case "wet":
-      return "bg-amber-500/15 text-amber-300 border-amber-500/30";
+      return AMBER_BADGE;
     case "normal":
       return "";
     case "powder":
-      return "bg-sky-500/15 text-sky-300 border-sky-500/30";
+      return SKY_BADGE;
   }
 }
 
@@ -142,9 +149,9 @@ export function riskBadgeClass(risk: RainSnowRisk): string {
     case "snow":
       return "";
     case "mixed":
-      return "bg-amber-500/15 text-amber-300 border-amber-500/30";
+      return AMBER_BADGE;
     case "rain":
-      return "bg-rose-500/15 text-rose-300 border-rose-500/30";
+      return ROSE_BADGE;
   }
 }
 
@@ -177,9 +184,9 @@ export function getWindRiskLevel(
 export function windRiskBadgeClass(level: WindRiskLevel): string {
   switch (level) {
     case "high":
-      return "bg-rose-500/15 text-rose-300 border-rose-500/30";
+      return ROSE_BADGE;
     case "caution":
-      return "bg-amber-500/15 text-amber-300 border-amber-500/30";
+      return AMBER_BADGE;
     case "none":
       return "";
   }
