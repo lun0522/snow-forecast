@@ -16,10 +16,10 @@ export function SnowpackPanel({ snowpack, timezone }: SnowpackPanelProps) {
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div className="flex flex-wrap items-baseline gap-2">
           <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-            {snowpack.label || "Nearby Snow Telemetry (Natural)"}
+            Current Base Depth (Natural Snow)
           </h3>
           <span className="text-xs text-slate-500 dark:text-slate-400">
-            · {snowpack.source_name} (excludes snowmaking &amp; groomed trails)
+            · Excludes snowmaking &amp; groomed trails
           </span>
         </div>
       </div>

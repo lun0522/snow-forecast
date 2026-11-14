@@ -37,10 +37,10 @@ export function ModelComparisonTable({ band }: ModelComparisonTableProps) {
     <div className="rounded-xl border border-slate-200/90 bg-white/90 p-4 shadow-xs md:p-5 dark:border-slate-800/90 dark:bg-slate-900/65 dark:shadow-none">
       <div className="pb-3 border-b border-slate-200/80 dark:border-slate-800/70">
         <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-          Multi-Model Spread Matrix · {band.label} ({formatElevM(band.elevation_ft, band.elevation_m)})
+          Forecast by Weather Model · {band.label} ({formatElevM(band.elevation_ft, band.elevation_m)})
         </h3>
         <p className="text-xs text-slate-500 dark:text-slate-400">
-          All models run through unified wet-bulb SLR + wind compaction physics. Partial-horizon models (like HRRR 44h) only enter shorter consensus windows.
+          Side-by-side totals using unified snow-density physics (short-range models like HRRR only cover earlier windows)
         </p>
       </div>
 

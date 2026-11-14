@@ -8,7 +8,7 @@ from typing import Any
 from app.geo import cm_to_inches, haversine_km, meters_to_feet, mm_to_inches
 from app.http_client import HttpFetchError
 
-SNOWPACK_LABEL = "Nearby Snow Telemetry (Natural)"
+SNOWPACK_LABEL = "Current Base Depth (Natural Snow)"
 CANADIAN_PROVINCES = frozenset({"BC", "AB", "ON", "QC", "YT"})
 
 

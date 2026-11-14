@@ -182,10 +182,10 @@ export function HourlyMeteogram({
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-3 dark:border-slate-800/70">
         <div>
           <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-            Hourly Storm Meteogram &amp; Snow Level · {bandLabel}
+            Hourly Snowfall &amp; Snow Level Forecast · {bandLabel}
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Scrub across hours to inspect snowfall intensity (cm/h), cumulative vs settled depth (cm), snow level (m) vs bands, and temp (°C)
+            Hover over the charts for hour-by-hour snowfall rate, storm total, snow level vs. resort elevations, and temperature
           </p>
         </div>
         <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100/90 p-0.5 text-xs dark:border-slate-700/80 dark:bg-slate-950/75">
@@ -263,9 +263,12 @@ export function HourlyMeteogram({
           <span className="font-medium text-slate-700 dark:text-slate-300">
             Snowfall Rate (cm/h) &amp; Storm Total
           </span>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <span className="inline-flex items-center gap-1.5">
               <span className="inline-block h-2 w-2 rounded-xs bg-sky-600 dark:bg-sky-400" /> Hourly median
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="inline-block h-2 w-2 rounded-xs bg-sky-500/25 dark:bg-sky-400/25" /> Hourly max
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="inline-block h-0.5 w-4 bg-cyan-600 dark:bg-cyan-300" /> Cumulative snow

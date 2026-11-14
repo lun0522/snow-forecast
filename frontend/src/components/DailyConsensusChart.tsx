@@ -90,10 +90,10 @@ export function DailyConsensusChart({
     <div className="rounded-xl border border-slate-200/90 bg-white/90 p-4 shadow-xs md:p-5 dark:border-slate-800/90 dark:bg-slate-900/65 dark:shadow-none">
       <div className="pb-3 border-b border-slate-200/80 dark:border-slate-800/70">
         <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-          7-Day Local Forecast Consensus · {bandLabel} ({formatElevM(elevationFt, elevationM)})
+          7-Day Snow Forecast · {bandLabel} ({formatElevM(elevationFt, elevationM)})
         </h3>
         <p className="text-xs text-slate-500 dark:text-slate-400">
-          Bars = multi-model median snowfall (cm); whiskers = min–max model range per local calendar day
+          Bars show median snowfall (cm) across models; vertical lines show the min–max model range per day
         </p>
       </div>
 

@@ -1,28 +1,24 @@
 # Snow Forecast Dashboard
 
-Personal ski resort snow forecast engine and dashboard using public meteorological models.
+Multi-model ski resort snow forecast engine and dashboard built with public meteorological models, unified snow-density physics, and nearby natural snowpack telemetry.
+
+**Live Site:** https://lun0522.github.io/snow-forecast/
 
 ## Target Resorts
-- **Northstar California** (North Tahoe, CA)
-- **Heavenly Mountain** (South Tahoe, CA/NV)
+- **Northstar California** (North Lake Tahoe, CA)
+- **Heavenly Mountain** (South Lake Tahoe, CA)
 - **Kirkwood Mountain** (Sierra Crest, CA)
 - **Park City Mountain** (Wasatch Back, UT)
 - **Keystone Resort** (Summit County, CO)
 - **Whistler Blackcomb** (Coast Mountains, BC)
 
 ## Public Data Sources
-- **Open-Meteo** (`/v1/forecast` & `/v1/elevation`): Multi-model forecasts (`ecmwf_ifs025`, `gfs_global`, `gfs_hrrr`, `ncep_nbm_conus`, `gem_global`, `icon_global`) with Copernicus 90m DEM and elevation lapse-rate downscaling for Base, Mid, and Summit bands (gracefully skipped if unreachable).
-- **MET Norway Locationforecast 2.0** (`api.met.no`): Global ECMWF-backed hourly/6h forecast adjusted for exact Base/Mid/Summit `altitude`.
+- **Open-Meteo** (`/v1/forecast` & `/v1/elevation`): Multi-model forecasts (`ecmwf_ifs025`, `gfs_global`, `gfs_hrrr`, `ncep_nbm_conus`, `gem_global`, `icon_global`) with Copernicus 90m DEM and elevation downscaling for Base, Mid, and Summit bands.
+- **MET Norway Locationforecast 2.0** (`api.met.no`): ECMWF-backed hourly/6h forecast adjusted for exact Base/Mid/Summit altitude.
 - **US National Weather Service** (`api.weather.gov`): 2.5 km NDFD/NBM gridpoints (`quantitativePrecipitation`, `snowfallAmount`, `snowLevel`, temperature, wind).
+- **USDA NRCS SNOTEL & BC River Forecast Centre ASWS**: Current natural snow base depth, 24h change, and snow water equivalent (SWE) from nearby automated mountain stations.
 
-## Roadmap
-- **Step 1 (Done):** Resort registry (`backend/app/resorts.json`) + DEM & NWS grid discovery (`discover_stations.py`)
-- **Step 2 (Done):** Multi-model, MET Norway, and NWS ingestion (`fetch_snapshot.py`)
-- **Step 3 (Done):** Custom snow physics (wet-bulb partitioning, dynamic SLR + wind compaction, storm settling) & consensus blending (`app/engine/`)
-- **Step 4 (Done):** SQLite store (`data/snow.db`) + FastAPI REST API (`app/main.py`) + refresh pipeline (`app/scripts/update.py`)
-- **Step 5 (Done):** React + TypeScript + Tailwind dashboard UI (`frontend/`)
-
-## Running the Backend (Steps 1–4)
+## Running the Backend
 
 From `backend/` (using the virtual environment):
 
@@ -34,18 +30,20 @@ python3 -m venv .venv
 # Run unit & API tests
 .venv/bin/pytest tests -v
 
-# Step 1: Discover DEM elevations & NWS gridpoints -> app/resorts.json
+# Fetch live data, run snow physics + consensus blending, and store in SQLite (data/snow.db)
+.venv/bin/python -m app.scripts.update
+
+# Export static JSON payloads (resorts.json + resorts/<id>.json) for GitHub Pages / static hosting
+.venv/bin/python -m app.scripts.update --export-dir ../frontend/public/data
+
+# Reprocess the latest saved snapshot offline (data/latest_snapshot.json)
+.venv/bin/python -m app.scripts.update --from-snapshot
+
+# Optional: refresh DEM elevations & NWS gridpoints -> app/resorts.json
 .venv/bin/python -m app.scripts.discover_stations
 
-# Step 2: Fetch raw forecasts -> data/latest_snapshot.json
+# Optional: fetch raw forecasts -> data/latest_snapshot.json without writing SQLite
 .venv/bin/python -m app.scripts.fetch_snapshot
-
-# Steps 3 & 4: Fetch live data, run snow physics + consensus engine, and store in SQLite (data/snow.db)
-.venv/bin/python -m app.scripts.update
-# Export static JSON payloads for GitHub Pages / static hosting:
-.venv/bin/python -m app.scripts.update --export-dir ../frontend/public/data
-# Or reprocess the latest saved snapshot offline:
-.venv/bin/python -m app.scripts.update --from-snapshot
 
 # Start the FastAPI server (port 8000)
 .venv/bin/uvicorn app.main:app --reload --port 8000
@@ -54,12 +52,11 @@ python3 -m venv .venv
 ### API Endpoints
 - `GET /api/health` — API & latest SQLite forecast run status
 - `GET /api/runs` — Recent forecast runs stored in SQLite
-- `GET /api/resorts` — Overview summaries for all configured resorts (24h/48h/72h/5d/7d Base/Mid/Summit consensus, snow level, confidence, nearby snowpack telemetry)
+- `GET /api/resorts` — Overview summaries for all configured resorts (24h/48h/72h/5d/7d Base/Mid/Summit consensus, snow level, confidence, nearby snowpack depth)
 - `GET /api/resorts/{resort_id}` — Detailed 168h consensus timeline, individual model breakdowns, and local-timezone daily rollups
 - `POST /api/refresh` — Trigger a live multi-source fetch, physics/consensus run, and SQLite save
 
-
-## Running the Web UI (Step 5)
+## Running the Web UI
 
 With the FastAPI server running on port `8000`, launch the Vite + React dashboard from `frontend/`:
 
@@ -69,11 +66,11 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173` in your browser (`/api/*` requests proxy automatically to `http://127.0.0.1:8000`).
+Open `http://localhost:5173` in your browser (`/api/*` requests proxy automatically to `http://127.0.0.1:8000`). Production builds (`npm run build`) automatically read exported static JSON from `data/resorts.json` unless `VITE_DATA_MODE=api` or `VITE_API_BASE` is set.
 
 ## Deploying to GitHub Pages (Static + GitHub Actions)
 
-1. Push to `main` (e.g. `git@github.com:lun0522/snow-forecast.git`).
+1. Push to `main`.
 2. In your GitHub repository: **Settings → Pages → Build and deployment → Source**, choose **GitHub Actions**.
-3. Run the **Deploy Static Forecast Site to Pages** workflow (`.github/workflows/deploy.yml`) manually once or let it trigger automatically on push and every 4 hours via cron (`17 */4 * * *`).
-4. The workflow fetches fresh forecasts with `python -m app.scripts.update --export-dir ../frontend/public/data`, builds Vite in static mode (`VITE_DATA_MODE=static`), and publishes `frontend/dist` to GitHub Pages.
+3. Run **Deploy Static Forecast Site to Pages** (`.github/workflows/deploy.yml`) once from the **Actions** tab, or let it trigger automatically on pushes to `main` and every 4 hours on schedule (`0 */4 * * *` UTC).
+4. Each workflow run tests the backend, runs `python -m app.scripts.update --export-dir ../frontend/public/data`, builds Vite in static mode (`VITE_DATA_MODE=static`), and deploys `frontend/dist` to https://lun0522.github.io/snow-forecast/.
