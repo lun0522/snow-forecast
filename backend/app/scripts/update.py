@@ -86,18 +86,6 @@ def print_consensus_report(result: dict[str, Any]) -> None:
                 f"SnowLvl={sl_str:<13} "
                 f"[{w['72h']['confidence'].upper()} | {w['72h']['model_count']}m]"
             )
-        snotel = resort["observations"].get("snotel") or []
-        if snotel:
-            st = snotel[0]["station"]
-            sm = snotel[0]["summary"]
-            if sm:
-                print(
-                    f"  Telemetry ({st['name']} {st['elevation_ft']}ft): "
-                    f"Depth={sm.get('snow_depth_in')}\" "
-                    f"SWE={sm.get('swe_in')}\" "
-                    f"Temp={sm.get('temp_f')}F "
-                    f"@ {sm.get('latest_timestamp')}"
-                )
 
 
 def main() -> None:

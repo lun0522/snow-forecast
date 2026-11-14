@@ -12,13 +12,12 @@ from fastapi.testclient import TestClient
 
 from app.main import create_app
 from app.scripts.update import run_update_pipeline
-from app.storage.db import get_resort_detail, get_resort_history, get_resort_summaries
+from app.storage.db import get_resort_detail, get_resort_summaries
 
 
 def _make_resorts_config() -> dict:
     return {
         "generated_at_utc": "2026-11-14T00:00:00+00:00",
-        "snotel_catalog_count": 1,
         "resorts": [
             {
                 "id": "kirkwood",
@@ -26,15 +25,11 @@ def _make_resorts_config() -> dict:
                 "region": "Lake Tahoe",
                 "state": "CA",
                 "timezone": "America/Los_Angeles",
-                "cdec_candidates": ["CSL"],
                 "bands": {
                     "base": {"label": "Base", "lat": 38.68, "lon": -120.06, "reported_elevation_ft": 7800, "reported_elevation_m": 2377.4},
                     "mid": {"label": "Mid", "lat": 38.68, "lon": -120.06, "reported_elevation_ft": 8800, "reported_elevation_m": 2682.2},
                     "summit": {"label": "Summit", "lat": 38.67, "lon": -120.06, "reported_elevation_ft": 9800, "reported_elevation_m": 2987.0},
                 },
-                "snotel_stations": [
-                    {"triplet": "539:CA:SNTL", "name": "Carson Pass", "elevation_ft": 8353, "distance_km": 6.4}
-                ],
             }
         ],
     }
@@ -66,7 +61,6 @@ def _make_snapshot(fetched_at: datetime, precip_mm_per_hour: float) -> dict:
         for idx, row in enumerate(ecmwf_rows)
     ]
 
-    obs_ts = anchor.strftime("%Y-%m-%d %H:%M")
     return {
         "fetched_at_utc": fetched_at.isoformat(),
         "models_requested": ["ecmwf_ifs025", "gfs_global"],
@@ -93,32 +87,8 @@ def _make_snapshot(fetched_at: datetime, precip_mm_per_hour: float) -> dict:
                     }
                     for key, label, elev in (("base", "Base", 7800), ("mid", "Mid", 8800), ("summit", "Summit", 9800))
                 },
-                "observations": {
-                    "snotel": [
-                        {
-                            "station": {"triplet": "539:CA:SNTL", "name": "Carson Pass", "elevation_ft": 8353, "distance_km": 6.4},
-                            "summary": {"snow_depth_in": 14.0, "swe_in": 4.2, "temp_f": 24.0, "latest_timestamp": obs_ts},
-                        }
-                    ],
-                    "cdec": [
-                        {
-                            "station_id": "CSL",
-                            "source": "cdec",
-                            "duration": "D",
-                            "latest": {"timestamp": anchor.date().isoformat(), "SWE": 4.0, "SNOW_DEPTH": 13.5, "TEMP": 25.0},
-                            "observations": [{"timestamp": anchor.date().isoformat(), "SWE": 4.0, "SNOW_DEPTH": 13.5, "TEMP": 25.0}],
-                        }
-                    ],
-                },
             }
         ],
-        "raw_snotel": {
-            "539:CA:SNTL": {
-                "observations": [
-                    {"timestamp": obs_ts, "WTEQ": 4.2, "SNWD": 14.0, "PREC": 5.1, "TOBS": 24.0}
-                ]
-            }
-        },
     }
 
 
@@ -171,10 +141,6 @@ class ApiAndDbTests(unittest.TestCase):
         assert detail is not None
         self.assertEqual(len(detail["bands"]["summit"]["hourly"]), 168)
 
-        history = get_resort_history("kirkwood", band_key="summit", days=14, db_path=self.db_path)
-        self.assertEqual(len(history["run_trend"]), 2)
-        self.assertEqual(len(history["stations"]), 2)  # CDEC + SNOTEL deduplicated cleanly
-
     def test_fastapi_endpoints_and_refresh_flow(self) -> None:
         now = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
         snap = _make_snapshot(now, precip_mm_per_hour=2.0)
@@ -209,15 +175,8 @@ class ApiAndDbTests(unittest.TestCase):
             self.assertEqual(detail_resp.status_code, 200)
             self.assertIn("ecmwf_ifs025", detail_resp.json()["bands"]["summit"]["models"])
 
-            hist_resp = client.get("/api/resorts/kirkwood/history?band=summit")
-            self.assertEqual(hist_resp.status_code, 200)
-            self.assertEqual(len(hist_resp.json()["run_trend"]), 1)
-
             bad_resort = client.get("/api/resorts/unknown")
             self.assertEqual(bad_resort.status_code, 404)
-
-            bad_band = client.get("/api/resorts/kirkwood/history?band=invalid")
-            self.assertEqual(bad_band.status_code, 400)
 
 
 if __name__ == "__main__":

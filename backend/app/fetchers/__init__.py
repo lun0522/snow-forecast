@@ -1,1 +1,1 @@
-"""Public weather and snow telemetry fetchers."""
+"""Public weather forecast fetchers."""

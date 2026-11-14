@@ -174,24 +174,8 @@ class BlendingTests(unittest.TestCase):
                             },
                         }
                     },
-                    "observations": {
-                        "snotel": [
-                            {
-                                "station": {"triplet": "539:CA:SNTL", "name": "Carson Pass", "elevation_ft": 8353},
-                                "summary": {"snow_depth_in": 12.0, "swe_in": 3.5, "temp_f": 28.0},
-                            }
-                        ],
-                        "cdec": [],
-                    },
                 }
             ],
-            "raw_snotel": {
-                "539:CA:SNTL": {
-                    "observations": [
-                        {"timestamp": "2026-11-14 00:00", "WTEQ": 3.5, "SNWD": 12.0, "PREC": 4.0, "TOBS": 28.0}
-                    ]
-                }
-            },
         }
 
     def test_partial_horizon_exclusion_and_interval_alignment(self) -> None:
@@ -222,7 +206,6 @@ class BlendingTests(unittest.TestCase):
         self.assertLessEqual(w24["snow_min_in"], w24["snow_median_in"])
         self.assertLessEqual(w24["snow_median_in"], w24["snow_max_in"])
         self.assertEqual(w24["rain_snow_risk"], "snow")
-        self.assertEqual(processed["summaries"][0]["primary_snotel"]["snow_depth_in"], 12.0)
 
 
 if __name__ == "__main__":

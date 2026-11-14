@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 import sqlite3
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -59,26 +59,8 @@ CREATE TABLE IF NOT EXISTS resort_run_payloads (
     PRIMARY KEY (run_id, resort_id)
 );
 
-CREATE TABLE IF NOT EXISTS station_observations (
-    station_id TEXT NOT NULL,
-    source TEXT NOT NULL,
-    resort_id TEXT NOT NULL,
-    station_name TEXT,
-    elevation_ft INTEGER,
-    observed_at TEXT NOT NULL,
-    swe_in REAL,
-    snow_depth_in REAL,
-    precip_accum_in REAL,
-    temp_f REAL,
-    updated_at_utc TEXT NOT NULL,
-    PRIMARY KEY (station_id, source, observed_at)
-);
-
 CREATE INDEX IF NOT EXISTS idx_bwf_lookup
     ON band_window_forecasts (resort_id, band_key, window_key, run_id);
-
-CREATE INDEX IF NOT EXISTS idx_obs_lookup
-    ON station_observations (resort_id, source, station_id, observed_at);
 """
 
 
@@ -104,7 +86,7 @@ def save_forecast_run(
     status: str = "ok",
     notes: str | None = None,
 ) -> int:
-    """Persist a Step 3 processed run, band windows, resort payloads, and station observations."""
+    """Persist a Step 3 processed run, band windows, and resort payloads."""
     init_db(db_path)
     fetched_at = processed["fetched_at_utc"]
     created_at = datetime.now(timezone.utc).isoformat()
@@ -131,7 +113,6 @@ def save_forecast_run(
 
         bwf_rows: list[tuple[Any, ...]] = []
         payload_rows: list[tuple[Any, ...]] = []
-        obs_rows: list[tuple[Any, ...]] = []
 
         for resort in processed.get("resorts") or []:
             resort_id = resort["id"]
@@ -170,58 +151,6 @@ def save_forecast_run(
                         )
                     )
 
-            obs = resort.get("observations") or {}
-            for snotel_entry in obs.get("snotel") or []:
-                st = snotel_entry.get("station") or {}
-                station_id = st.get("triplet")
-                if not station_id:
-                    continue
-                st_name = st.get("name")
-                elev_ft = st.get("elevation_ft")
-                for row in snotel_entry.get("observations") or []:
-                    ts = row.get("timestamp")
-                    if not ts:
-                        continue
-                    obs_rows.append(
-                        (
-                            station_id,
-                            "snotel",
-                            resort_id,
-                            st_name,
-                            elev_ft,
-                            ts,
-                            row.get("WTEQ"),
-                            row.get("SNWD"),
-                            row.get("PREC"),
-                            row.get("TOBS"),
-                            created_at,
-                        )
-                    )
-
-            for cdec_entry in obs.get("cdec") or []:
-                station_id = cdec_entry.get("station_id")
-                if not station_id:
-                    continue
-                for row in cdec_entry.get("observations") or []:
-                    ts = row.get("timestamp")
-                    if not ts:
-                        continue
-                    obs_rows.append(
-                        (
-                            station_id,
-                            "cdec",
-                            resort_id,
-                            station_id,
-                            None,
-                            ts,
-                            row.get("SWE"),
-                            row.get("SNOW_DEPTH"),
-                            None,
-                            row.get("TEMP"),
-                            created_at,
-                        )
-                    )
-
         conn.executemany(
             """
             INSERT INTO band_window_forecasts (
@@ -239,21 +168,6 @@ def save_forecast_run(
             VALUES (?, ?, ?, ?)
             """,
             payload_rows,
-        )
-        conn.executemany(
-            """
-            INSERT INTO station_observations (
-                station_id, source, resort_id, station_name, elevation_ft,
-                observed_at, swe_in, snow_depth_in, precip_accum_in, temp_f, updated_at_utc
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(station_id, source, observed_at) DO UPDATE SET
-                swe_in = COALESCE(excluded.swe_in, station_observations.swe_in),
-                snow_depth_in = COALESCE(excluded.snow_depth_in, station_observations.snow_depth_in),
-                precip_accum_in = COALESCE(excluded.precip_accum_in, station_observations.precip_accum_in),
-                temp_f = COALESCE(excluded.temp_f, station_observations.temp_f),
-                updated_at_utc = excluded.updated_at_utc
-            """,
-            obs_rows,
         )
 
     return run_id
@@ -380,94 +294,3 @@ def get_resort_detail(
         payload = json.loads(row["detail_json"])
         payload["run_id"] = run_row["id"]
         return payload
-
-
-def get_resort_history(
-    resort_id: str,
-    band_key: str = "summit",
-    days: int = 14,
-    run_limit: int = 20,
-    db_path: Path = DEFAULT_DB_PATH,
-) -> dict[str, Any]:
-    """Return persisted station observations and historical run-to-run forecast trends."""
-    init_db(db_path)
-    cutoff_date = (datetime.now(timezone.utc) - timedelta(days=days)).date().isoformat()
-
-    with get_connection(db_path) as conn:
-        obs_rows = conn.execute(
-            """
-            SELECT station_id, source, station_name, elevation_ft, observed_at,
-                   swe_in, snow_depth_in, precip_accum_in, temp_f
-            FROM station_observations
-            WHERE resort_id = ? AND substr(observed_at, 1, 10) >= ?
-            ORDER BY source ASC, station_id ASC, observed_at ASC
-            """,
-            (resort_id, cutoff_date),
-        ).fetchall()
-
-        trend_rows = conn.execute(
-            """
-            SELECT r.id AS run_id, r.fetched_at_utc, b.window_key,
-                   b.snow_min_in, b.snow_median_in, b.snow_max_in,
-                   b.precip_median_in, b.rain_snow_risk, b.confidence
-            FROM band_window_forecasts b
-            JOIN forecast_runs r ON r.id = b.run_id
-            WHERE b.resort_id = ? AND b.band_key = ? AND b.window_key IN ('24h', '72h', '168h')
-            ORDER BY r.fetched_at_utc DESC, b.run_id DESC
-            LIMIT ?
-            """,
-            (resort_id, band_key, run_limit * 3),
-        ).fetchall()
-
-    stations_map: dict[tuple[str, str], dict[str, Any]] = {}
-    for row in obs_rows:
-        key = (row["source"], row["station_id"])
-        bucket = stations_map.setdefault(
-            key,
-            {
-                "station_id": row["station_id"],
-                "source": row["source"],
-                "station_name": row["station_name"],
-                "elevation_ft": row["elevation_ft"],
-                "series": [],
-            },
-        )
-        bucket["series"].append(
-            {
-                "observed_at": row["observed_at"],
-                "swe_in": row["swe_in"],
-                "snow_depth_in": row["snow_depth_in"],
-                "precip_accum_in": row["precip_accum_in"],
-                "temp_f": row["temp_f"],
-            }
-        )
-
-    runs_map: dict[int, dict[str, Any]] = {}
-    for row in trend_rows:
-        rid = row["run_id"]
-        entry = runs_map.setdefault(
-            rid,
-            {
-                "run_id": rid,
-                "fetched_at_utc": row["fetched_at_utc"],
-                "windows": {},
-            },
-        )
-        entry["windows"][row["window_key"]] = {
-            "snow_min_in": row["snow_min_in"],
-            "snow_median_in": row["snow_median_in"],
-            "snow_max_in": row["snow_max_in"],
-            "precip_median_in": row["precip_median_in"],
-            "rain_snow_risk": row["rain_snow_risk"],
-            "confidence": row["confidence"],
-        }
-
-    run_trend = sorted(runs_map.values(), key=lambda x: (x["fetched_at_utc"], x["run_id"]))
-
-    return {
-        "resort_id": resort_id,
-        "band_key": band_key,
-        "days": days,
-        "stations": list(stations_map.values()),
-        "run_trend": run_trend,
-    }

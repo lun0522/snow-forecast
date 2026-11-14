@@ -1,10 +1,9 @@
-"""SQLite persistence layer for forecast runs, band windows, and station telemetry."""
+"""SQLite persistence layer for forecast runs and band windows."""
 
 from app.storage.db import (
     DEFAULT_DB_PATH,
     get_latest_run,
     get_resort_detail,
-    get_resort_history,
     get_resort_summaries,
     init_db,
     list_runs,
@@ -15,7 +14,6 @@ __all__ = [
     "DEFAULT_DB_PATH",
     "get_latest_run",
     "get_resort_detail",
-    "get_resort_history",
     "get_resort_summaries",
     "init_db",
     "list_runs",

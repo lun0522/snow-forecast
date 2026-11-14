@@ -685,74 +685,14 @@ def process_band_snapshot(
     }
 
 
-def _enrich_observations(
-    resort_snapshot: dict[str, Any],
-    raw_snotel: dict[str, Any],
-) -> dict[str, Any]:
-    """Attach recent station observation time series from raw_snotel alongside summaries."""
-    obs = resort_snapshot.get("observations") or {}
-    enriched_snotel: list[dict[str, Any]] = []
-    for entry in obs.get("snotel") or []:
-        station = entry.get("station") or {}
-        triplet = station.get("triplet")
-        raw = raw_snotel.get(triplet) or {}
-        series = entry.get("observations") or raw.get("observations") or []
-        summary = entry.get("summary") or raw.get("summary") or {}
-        enriched_snotel.append(
-            {
-                "station": station,
-                "summary": summary,
-                "observations": series[-168:],  # Keep up to 7 days of hourly telemetry
-            }
-        )
-
-    enriched_cdec: list[dict[str, Any]] = []
-    for c_entry in obs.get("cdec") or []:
-        enriched_cdec.append(
-            {
-                "station_id": c_entry.get("station_id"),
-                "source": c_entry.get("source", "cdec"),
-                "duration": c_entry.get("duration", "D"),
-                "latest": c_entry.get("latest") or {},
-                "observations": (c_entry.get("observations") or [])[-30:],
-            }
-        )
-
-    return {
-        "snotel": enriched_snotel,
-        "cdec": enriched_cdec,
-    }
-
-
 def build_resort_summary(processed_resort: dict[str, Any], fetched_at_utc: str) -> dict[str, Any]:
-    """Build lightweight card/leaderboard summary for GET /api/resorts."""
+    """Build lightweight summary for GET /api/resorts."""
     bands_summary: dict[str, Any] = {}
     for band_key, band_val in processed_resort["bands"].items():
         bands_summary[band_key] = {
             "label": band_val["label"],
             "elevation_ft": band_val["elevation_ft"],
             "windows": band_val["windows"],
-        }
-
-    snotel_list = processed_resort["observations"].get("snotel") or []
-    primary_snotel = None
-    if snotel_list:
-        first = snotel_list[0]
-        primary_snotel = {
-            "name": first["station"].get("name"),
-            "triplet": first["station"].get("triplet"),
-            "elevation_ft": first["station"].get("elevation_ft"),
-            "distance_km": first["station"].get("distance_km"),
-            **(first.get("summary") or {}),
-        }
-
-    cdec_list = processed_resort["observations"].get("cdec") or []
-    primary_cdec = None
-    if cdec_list:
-        first_c = cdec_list[0]
-        primary_cdec = {
-            "station_id": first_c.get("station_id"),
-            **(first_c.get("latest") or {}),
         }
 
     return {
@@ -763,19 +703,16 @@ def build_resort_summary(processed_resort: dict[str, Any], fetched_at_utc: str) 
         "timezone": processed_resort["timezone"],
         "fetched_at_utc": fetched_at_utc,
         "bands": bands_summary,
-        "primary_snotel": primary_snotel,
-        "primary_cdec": primary_cdec,
     }
 
 
 def process_resort_snapshot(
     resort_snapshot: dict[str, Any],
     anchor_utc: datetime,
-    raw_snotel: dict[str, Any] | None = None,
     resort_meta: dict[str, Any] | None = None,
     horizon_hours: int = HORIZON_HOURS,
 ) -> dict[str, Any]:
-    """Process all elevation bands and observations for one resort."""
+    """Process all elevation bands for one resort."""
     tz_name = resort_snapshot.get("timezone") or (resort_meta or {}).get("timezone") or "UTC"
     local_tz = ZoneInfo(tz_name)
 
@@ -792,7 +729,6 @@ def process_resort_snapshot(
             horizon_hours=horizon_hours,
         )
 
-    observations = _enrich_observations(resort_snapshot, raw_snotel or {})
     return {
         "id": resort_snapshot["id"],
         "name": resort_snapshot["name"],
@@ -800,7 +736,6 @@ def process_resort_snapshot(
         "state": resort_snapshot["state"],
         "timezone": tz_name,
         "bands": processed_bands,
-        "observations": observations,
     }
 
 
@@ -810,13 +745,12 @@ def process_snapshot(
     reference_time: datetime | None = None,
     horizon_hours: int = HORIZON_HOURS,
 ) -> dict[str, Any]:
-    """Transform a Step 2 raw snapshot into Step 3 consensus forecasts & station time series."""
+    """Transform a Step 2 raw snapshot into Step 3 consensus forecasts."""
     fetched_at_str = snapshot.get("fetched_at_utc") or datetime.now(timezone.utc).isoformat()
     anchor_raw = reference_time or parse_utc(fetched_at_str)
     anchor_utc = floor_utc_hour(anchor_raw)
 
     meta_by_id = {r["id"]: r for r in (resorts_meta or [])}
-    raw_snotel = snapshot.get("raw_snotel") or {}
 
     processed_resorts: list[dict[str, Any]] = []
     summaries: list[dict[str, Any]] = []
@@ -824,7 +758,6 @@ def process_snapshot(
         processed = process_resort_snapshot(
             resort_snapshot=r_snap,
             anchor_utc=anchor_utc,
-            raw_snotel=raw_snotel,
             resort_meta=meta_by_id.get(r_snap["id"]),
             horizon_hours=horizon_hours,
         )

@@ -22,13 +22,10 @@ from app.storage.db import (
     DEFAULT_DB_PATH,
     get_latest_run,
     get_resort_detail,
-    get_resort_history,
     get_resort_summaries,
     init_db,
     list_runs,
 )
-
-VALID_BANDS = ("base", "mid", "summit")
 
 
 def create_app(
@@ -119,29 +116,6 @@ def create_app(
                 detail=f"No forecast data found for resort '{resort_id}' (run POST /api/refresh first).",
             )
         return detail
-
-    @application.get("/api/resorts/{resort_id}/history")
-    def resort_history(
-        resort_id: str,
-        band: str = Query(default="summit"),
-        days: int = Query(default=14, ge=1, le=90),
-        run_limit: int = Query(default=20, ge=1, le=100),
-    ) -> dict[str, Any]:
-        known = _known_resort_ids()
-        if known and resort_id not in known:
-            raise HTTPException(status_code=404, detail=f"Unknown resort '{resort_id}'")
-        if band not in VALID_BANDS:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid band '{band}'. Must be one of {', '.join(VALID_BANDS)}.",
-            )
-        return get_resort_history(
-            resort_id=resort_id,
-            band_key=band,
-            days=days,
-            run_limit=run_limit,
-            db_path=resolved_db,
-        )
 
     @application.post("/api/refresh")
     def refresh_forecasts() -> dict[str, Any]:

@@ -1,15 +1,13 @@
-"""Offline unit tests for geo helpers and Open-Meteo, NWS, SNOTEL, and CDEC parsers."""
+"""Offline unit tests for geo helpers and Open-Meteo, NWS, and MET Norway parsers."""
 
 from __future__ import annotations
 
 import unittest
 from datetime import datetime, timezone
 
-from app.fetchers.cdec import parse_cdec_sensor_rows
 from app.fetchers.met_no import parse_met_no_response
 from app.fetchers.nws import parse_grid_forecast_response, parse_iso_duration
 from app.fetchers.open_meteo import parse_multi_model_response
-from app.fetchers.snotel import find_nearest_snotel_stations, parse_snotel_data_response
 from app.geo import haversine_km
 
 
@@ -99,75 +97,6 @@ class NwsParserTests(unittest.TestCase):
         self.assertAlmostEqual(parsed["windows"]["24h"]["snowfall_mm"], 60.0)
         self.assertAlmostEqual(parsed["windows"]["48h"]["snowfall_mm"], 120.0)
         self.assertAlmostEqual(parsed["windows"]["24h"]["temp_min_f"], 24.8)
-
-
-class SnotelAndCdecTests(unittest.TestCase):
-    def test_snotel_nearest_and_delta_calculation(self) -> None:
-        stations = [
-            {
-                "stationTriplet": "518:CA:SNTL",
-                "name": "Heavenly Valley",
-                "latitude": 38.92,
-                "longitude": -119.92,
-                "elevation": 8540,
-                "stateCode": "CA",
-            },
-            {
-                "stationTriplet": "505:CO:SNTL",
-                "name": "Grizzly Peak",
-                "latitude": 39.65,
-                "longitude": -105.87,
-                "elevation": 11110,
-                "stateCode": "CO",
-            },
-        ]
-        nearest = find_nearest_snotel_stations(38.929, -119.919, stations, limit=2, max_distance_km=50.0)
-        self.assertEqual(len(nearest), 1)
-        self.assertEqual(nearest[0]["triplet"], "518:CA:SNTL")
-
-        raw_data = [
-            {
-                "stationTriplet": "518:CA:SNTL",
-                "data": [
-                    {
-                        "stationElement": {"elementCode": "WTEQ", "storedUnitCode": "in"},
-                        "values": [
-                            {"date": "2026-11-12", "value": 2.0},
-                            {"date": "2026-11-13", "value": 2.8},
-                        ],
-                    },
-                    {
-                        "stationElement": {"elementCode": "SNWD", "storedUnitCode": "in"},
-                        "values": [
-                            {"date": "2026-11-12", "value": 10.0},
-                            {"date": "2026-11-13", "value": 18.0},
-                        ],
-                    },
-                ],
-            }
-        ]
-        parsed = parse_snotel_data_response(raw_data)
-        summary = parsed["518:CA:SNTL"]["summary"]
-        self.assertEqual(summary["cadence"], "DAILY")
-        self.assertAlmostEqual(summary["swe_in"], 2.8)
-        self.assertAlmostEqual(summary["swe_delta_24h_in"], 0.8)
-        self.assertAlmostEqual(summary["snow_depth_delta_24h_in"], 8.0)
-
-    def test_cdec_filters_sentinels_and_normalizes_dates(self) -> None:
-        rows = [
-            {"SENSOR_NUM": 3, "date": "2026-11-12 00:00", "value": -9999, "units": "INCHES"},
-            {"SENSOR_NUM": 3, "date": "2026-11-9 00:00", "value": -0.28, "units": "INCHES"},
-            {"SENSOR_NUM": 18, "date": "2026-11-13 00:00", "value": "---", "units": "INCHES"},
-            {"SENSOR_NUM": 18, "date": "2026-11-13 00:00", "value": 14.5, "units": "INCHES"},
-        ]
-        cleaned = parse_cdec_sensor_rows(rows)
-        self.assertEqual(len(cleaned), 2)
-        self.assertEqual(cleaned[0]["timestamp"], "2026-11-09 00:00")
-        self.assertEqual(cleaned[0]["metric"], "swe_in")
-        self.assertAlmostEqual(cleaned[0]["value"], 0.0)
-        self.assertEqual(cleaned[1]["metric"], "snow_depth_in")
-        self.assertAlmostEqual(cleaned[1]["value"], 14.5)
-        self.assertLess(cleaned[0]["timestamp"], cleaned[1]["timestamp"])
 
 
 class MetNoParserTests(unittest.TestCase):

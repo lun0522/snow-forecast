@@ -1,6 +1,5 @@
 {
   "generated_at_utc": "2026-11-14T05:55:21.020086+00:00",
-  "snotel_catalog_count": 353,
   "resorts": [
     {
       "id": "northstar",
@@ -8,7 +7,6 @@
       "region": "North Lake Tahoe",
       "state": "CA",
       "timezone": "America/Los_Angeles",
-      "cdec_candidates": [],
       "bands": {
         "base": {
           "label": "Village Base",
@@ -57,45 +55,7 @@
             "relative_state": "CA"
           }
         }
-      },
-      "snotel_stations": [
-        {
-          "triplet": "834:CA:SNTL",
-          "name": "Truckee #2",
-          "state": "CA",
-          "county": "Placer",
-          "latitude": 39.30087,
-          "longitude": -120.18407,
-          "elevation_ft": 6500.0,
-          "elevation_m": 1981.2,
-          "distance_km": 6.62,
-          "distance_mi": 4.11
-        },
-        {
-          "triplet": "809:CA:SNTL",
-          "name": "Tahoe City Cross",
-          "state": "CA",
-          "county": "Placer",
-          "latitude": 39.17162,
-          "longitude": -120.15362,
-          "elevation_ft": 6760.0,
-          "elevation_m": 2060.4,
-          "distance_km": 9.83,
-          "distance_mi": 6.11
-        },
-        {
-          "triplet": "784:CA:SNTL",
-          "name": "Palisades Tahoe",
-          "state": "CA",
-          "county": "Placer",
-          "latitude": 39.18986,
-          "longitude": -120.26576,
-          "elevation_ft": 8010.0,
-          "elevation_m": 2441.4,
-          "distance_km": 13.92,
-          "distance_mi": 8.65
-        }
-      ]
+      }
     },
     {
       "id": "heavenly",
@@ -103,7 +63,6 @@
       "region": "South Lake Tahoe",
       "state": "CA",
       "timezone": "America/Los_Angeles",
-      "cdec_candidates": [],
       "bands": {
         "base": {
           "label": "California Base",
@@ -152,45 +111,7 @@
             "relative_state": "NV"
           }
         }
-      },
-      "snotel_stations": [
-        {
-          "triplet": "518:CA:SNTL",
-          "name": "Heavenly Valley",
-          "state": "CA",
-          "county": "El Dorado",
-          "latitude": 38.92431,
-          "longitude": -119.91641,
-          "elevation_ft": 8540.0,
-          "elevation_m": 2603.0,
-          "distance_km": 0.57,
-          "distance_mi": 0.35
-        },
-        {
-          "triplet": "508:CA:SNTL",
-          "name": "Hagans Meadow",
-          "state": "CA",
-          "county": "El Dorado",
-          "latitude": 38.8519,
-          "longitude": -119.9374,
-          "elevation_ft": 7740.0,
-          "elevation_m": 2359.2,
-          "distance_km": 8.72,
-          "distance_mi": 5.42
-        },
-        {
-          "triplet": "1050:CA:SNTL",
-          "name": "Horse Meadow",
-          "state": "CA",
-          "county": "Alpine",
-          "latitude": 38.83652,
-          "longitude": -119.88732,
-          "elevation_ft": 8580.0,
-          "elevation_m": 2615.2,
-          "distance_km": 10.64,
-          "distance_mi": 6.61
-        }
-      ]
+      }
     },
     {
       "id": "kirkwood",
@@ -198,10 +119,6 @@
       "region": "Sierra Crest",
       "state": "CA",
       "timezone": "America/Los_Angeles",
-      "cdec_candidates": [
-        "CAP",
-        "CXS"
-      ],
       "bands": {
         "base": {
           "label": "Mountain Village Base",
@@ -250,45 +167,7 @@
             "relative_state": "CA"
           }
         }
-      },
-      "snotel_stations": [
-        {
-          "triplet": "1067:CA:SNTL",
-          "name": "Carson Pass",
-          "state": "CA",
-          "county": "Alpine",
-          "latitude": 38.6927,
-          "longitude": -120.0022,
-          "elevation_ft": 8360.0,
-          "elevation_m": 2548.1,
-          "distance_km": 5.81,
-          "distance_mi": 3.61
-        },
-        {
-          "triplet": "1049:CA:SNTL",
-          "name": "Forestdale Creek",
-          "state": "CA",
-          "county": "Alpine",
-          "latitude": 38.68245,
-          "longitude": -119.9597,
-          "elevation_ft": 8050.0,
-          "elevation_m": 2453.6,
-          "distance_km": 9.14,
-          "distance_mi": 5.68
-        },
-        {
-          "triplet": "1331:CA:SNTL",
-          "name": "Lost Lakes",
-          "state": "CA",
-          "county": "Alpine",
-          "latitude": 38.64745,
-          "longitude": -119.95141,
-          "elevation_ft": 8640.0,
-          "elevation_m": 2633.5,
-          "distance_km": 10.21,
-          "distance_mi": 6.35
-        }
-      ]
+      }
     },
     {
       "id": "park-city",
@@ -296,7 +175,6 @@
       "region": "Wasatch Back",
       "state": "UT",
       "timezone": "America/Denver",
-      "cdec_candidates": [],
       "bands": {
         "base": {
           "label": "Park City Base",
@@ -345,45 +223,7 @@
             "relative_state": "UT"
           }
         }
-      },
-      "snotel_stations": [
-        {
-          "triplet": "814:UT:SNTL",
-          "name": "Thaynes Canyon",
-          "state": "UT",
-          "county": "Summit",
-          "latitude": 40.6235,
-          "longitude": -111.53322,
-          "elevation_ft": 9260.0,
-          "elevation_m": 2822.4,
-          "distance_km": 1.34,
-          "distance_mi": 0.83
-        },
-        {
-          "triplet": "366:UT:SNTL",
-          "name": "Brighton",
-          "state": "UT",
-          "county": "Salt Lake",
-          "latitude": 40.59936,
-          "longitude": -111.58167,
-          "elevation_ft": 8790.0,
-          "elevation_m": 2679.2,
-          "distance_km": 6.21,
-          "distance_mi": 3.86
-        },
-        {
-          "triplet": "628:UT:SNTL",
-          "name": "Mill-D North",
-          "state": "UT",
-          "county": "Salt Lake",
-          "latitude": 40.65883,
-          "longitude": -111.63683,
-          "elevation_ft": 8940.0,
-          "elevation_m": 2724.9,
-          "distance_km": 10.13,
-          "distance_mi": 6.29
-        }
-      ]
+      }
     },
     {
       "id": "keystone",
@@ -391,7 +231,6 @@
       "region": "Summit County",
       "state": "CO",
       "timezone": "America/Denver",
-      "cdec_candidates": [],
       "bands": {
         "base": {
           "label": "River Run Base",
@@ -440,45 +279,7 @@
             "relative_state": "CO"
           }
         }
-      },
-      "snotel_stations": [
-        {
-          "triplet": "505:CO:SNTL",
-          "name": "Grizzly Peak",
-          "state": "CO",
-          "county": "Summit",
-          "latitude": 39.64646,
-          "longitude": -105.8694,
-          "elevation_ft": 11110.0,
-          "elevation_m": 3386.3,
-          "distance_km": 9.68,
-          "distance_mi": 6.01
-        },
-        {
-          "triplet": "602:CO:SNTL",
-          "name": "Loveland Basin",
-          "state": "CO",
-          "county": "Clear Creek",
-          "latitude": 39.67428,
-          "longitude": -105.90264,
-          "elevation_ft": 11410.0,
-          "elevation_m": 3477.8,
-          "distance_km": 11.07,
-          "distance_mi": 6.88
-        },
-        {
-          "triplet": "935:CO:SNTL",
-          "name": "Jackwhacker Gulch",
-          "state": "CO",
-          "county": "Clear Creek",
-          "latitude": 39.57096,
-          "longitude": -105.80355,
-          "elevation_ft": 11030.0,
-          "elevation_m": 3361.9,
-          "distance_km": 11.82,
-          "distance_mi": 7.35
-        }
-      ]
+      }
     }
   ]
 }

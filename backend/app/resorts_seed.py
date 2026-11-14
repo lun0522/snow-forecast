@@ -13,7 +13,6 @@ SEED_RESORTS: list[dict[str, Any]] = [
         "region": "North Lake Tahoe",
         "state": "CA",
         "timezone": "America/Los_Angeles",
-        "cdec_candidates": [],
         "bands": {
             "base": {
                 "label": "Village Base",
@@ -44,7 +43,6 @@ SEED_RESORTS: list[dict[str, Any]] = [
         "region": "South Lake Tahoe",
         "state": "CA",
         "timezone": "America/Los_Angeles",
-        "cdec_candidates": [],
         "bands": {
             "base": {
                 "label": "California Base",
@@ -75,7 +73,6 @@ SEED_RESORTS: list[dict[str, Any]] = [
         "region": "Sierra Crest",
         "state": "CA",
         "timezone": "America/Los_Angeles",
-        "cdec_candidates": ["CAP", "CXS"],
         "bands": {
             "base": {
                 "label": "Mountain Village Base",
@@ -106,7 +103,6 @@ SEED_RESORTS: list[dict[str, Any]] = [
         "region": "Wasatch Back",
         "state": "UT",
         "timezone": "America/Denver",
-        "cdec_candidates": [],
         "bands": {
             "base": {
                 "label": "Park City Base",
@@ -137,7 +133,6 @@ SEED_RESORTS: list[dict[str, Any]] = [
         "region": "Summit County",
         "state": "CO",
         "timezone": "America/Denver",
-        "cdec_candidates": [],
         "bands": {
             "base": {
                 "label": "River Run Base",

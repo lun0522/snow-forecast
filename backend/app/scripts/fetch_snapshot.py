@@ -1,4 +1,4 @@
-"""Step 2: Fetch multi-model forecasts, NWS gridpoints, MET Norway, and SNOTEL/CDEC telemetry."""
+"""Step 2: Fetch multi-model forecasts, NWS gridpoints, and MET Norway."""
 
 from __future__ import annotations
 
@@ -8,11 +8,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from app.fetchers.cdec import fetch_cdec_station_data
 from app.fetchers.met_no import fetch_met_no_forecast
 from app.fetchers.nws import fetch_grid_forecast
 from app.fetchers.open_meteo import DEFAULT_MODELS, fetch_multi_model_forecast
-from app.fetchers.snotel import fetch_snotel_data
 from app.http_client import HttpFetchError
 
 DEFAULT_RESORTS_PATH = Path(__file__).resolve().parent.parent / "resorts.json"
@@ -33,37 +31,8 @@ def fetch_all_data(
     resorts: list[dict[str, Any]],
     bands: tuple[str, ...] = ("base", "mid", "summit"),
     models: tuple[str, ...] = DEFAULT_MODELS,
-    snotel_days: int = 7,
 ) -> dict[str, Any]:
-    """Fetch forecasts (Open-Meteo, MET Norway, NWS) and observations (SNOTEL, CDEC)."""
-    triplets: list[str] = []
-    seen_triplets: set[str] = set()
-    cdec_ids: list[str] = []
-    seen_cdec: set[str] = set()
-
-    for resort in resorts:
-        for st in resort.get("snotel_stations", [])[:2]:
-            t = st.get("triplet")
-            if t and t not in seen_triplets:
-                seen_triplets.add(t)
-                triplets.append(t)
-        for cid in resort.get("cdec_candidates", []):
-            if cid and cid not in seen_cdec:
-                seen_cdec.add(cid)
-                cdec_ids.append(cid)
-
-    snotel_by_triplet: dict[str, Any] = {}
-    if triplets:
-        try:
-            snotel_by_triplet = fetch_snotel_data(triplets, days_back=snotel_days, duration="HOURLY")
-        except HttpFetchError as exc:
-            print(f"[warn] SNOTEL hourly fetch failed ({exc}); falling back to DAILY")
-            snotel_by_triplet = fetch_snotel_data(triplets, days_back=snotel_days, duration="DAILY")
-
-    cdec_by_id: dict[str, Any] = {}
-    for cid in cdec_ids:
-        cdec_by_id[cid] = fetch_cdec_station_data(cid, days_back=snotel_days, duration="D")
-
+    """Fetch forecasts (Open-Meteo, MET Norway, NWS)."""
     open_meteo_unreachable_error: str | None = None
     resort_snapshots: list[dict[str, Any]] = []
 
@@ -124,23 +93,6 @@ def fetch_all_data(
                 "nws": nws_data,
             }
 
-        resort_snotel = []
-        for st in resort.get("snotel_stations", [])[:2]:
-            triplet = st["triplet"]
-            obs = snotel_by_triplet.get(triplet) or {}
-            resort_snotel.append(
-                {
-                    "station": st,
-                    "summary": obs.get("summary", {}),
-                }
-            )
-
-        resort_cdec = [
-            cdec_by_id[cid]
-            for cid in resort.get("cdec_candidates", [])
-            if cid in cdec_by_id and cdec_by_id[cid].get("observations")
-        ]
-
         resort_snapshots.append(
             {
                 "id": resort["id"],
@@ -149,10 +101,6 @@ def fetch_all_data(
                 "state": resort["state"],
                 "timezone": resort.get("timezone"),
                 "bands": band_forecasts,
-                "observations": {
-                    "snotel": resort_snotel,
-                    "cdec": resort_cdec,
-                },
             }
         )
 
@@ -160,7 +108,6 @@ def fetch_all_data(
         "fetched_at_utc": datetime.now(timezone.utc).isoformat(),
         "models_requested": list(models),
         "resorts": resort_snapshots,
-        "raw_snotel": snotel_by_triplet,
     }
 
 
@@ -177,35 +124,13 @@ def _fmt_temp_range(win: dict[str, Any]) -> str:
 
 
 def print_snapshot_report(snapshot: dict[str, Any]) -> None:
-    """Print a compact OpenSnow-style multi-model + SNOTEL comparison in the terminal."""
+    """Print a compact multi-model forecast comparison in the terminal."""
     print(f"\nSnapshot fetched at {snapshot['fetched_at_utc']}")
     print("=" * 96)
 
     for resort in snapshot["resorts"]:
         print(f"\n{resort['name']} ({resort['region']}, {resort['state']})")
         print("-" * 96)
-
-        for st_entry in resort["observations"]["snotel"]:
-            meta = st_entry["station"]
-            s = st_entry["summary"]
-            if not s:
-                print(f"  SNOTEL {meta['triplet']} ({meta['name']}, {meta['elevation_ft']:.0f} ft): no recent obs")
-                continue
-            print(
-                f"  SNOTEL {meta['triplet']} {meta['name']} ({meta['elevation_ft']:.0f} ft, "
-                f"{meta['distance_mi']} mi): "
-                f"Depth={_fmt(s.get('snow_depth_in'), '\"')} (24h {_fmt(s.get('snow_depth_delta_24h_in'), '\"')}), "
-                f"SWE={_fmt(s.get('swe_in'), '\"')} (24h {_fmt(s.get('swe_delta_24h_in'), '\"')}), "
-                f"Temp={_fmt(s.get('temp_f'), '°F')} @ {s.get('latest_timestamp')}"
-            )
-
-        for cdec in resort["observations"]["cdec"]:
-            latest = cdec.get("latest") or {}
-            print(
-                f"  CDEC {cdec['station_id']}: "
-                f"Depth={_fmt(latest.get('snow_depth_in'), '\"')}, "
-                f"SWE={_fmt(latest.get('swe_in'), '\"')} @ {latest.get('timestamp')}"
-            )
 
         for band_key in ("base", "mid", "summit"):
             if band_key not in resort["bands"]:
@@ -267,7 +192,7 @@ def print_snapshot_report(snapshot: dict[str, Any]) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Fetch live ski resort forecasts & telemetry.")
+    parser = argparse.ArgumentParser(description="Fetch live ski resort forecasts.")
     parser.add_argument(
         "--resort",
         help="Optional resort id filter (e.g. northstar, heavenly, kirkwood, park-city, keystone)",
