@@ -1,0 +1,484 @@
+{
+  "generated_at_utc": "2026-11-14T05:55:21.020086+00:00",
+  "snotel_catalog_count": 353,
+  "resorts": [
+    {
+      "id": "northstar",
+      "name": "Northstar California",
+      "region": "North Lake Tahoe",
+      "state": "CA",
+      "timezone": "America/Los_Angeles",
+      "cdec_candidates": [],
+      "bands": {
+        "base": {
+          "label": "Village Base",
+          "lat": 39.2747,
+          "lon": -120.1211,
+          "reported_elevation_ft": 6330,
+          "reported_elevation_m": 1929.4,
+          "dem_elevation_m": 1943.0,
+          "dem_elevation_ft": 6375,
+          "nws": {
+            "grid_id": "REV",
+            "grid_x": 32,
+            "grid_y": 97,
+            "forecast_grid_data_url": "https://api.weather.gov/gridpoints/REV/32,97",
+            "forecast_hourly_url": "https://api.weather.gov/gridpoints/REV/32,97/forecast/hourly",
+            "observation_stations_url": "https://api.weather.gov/gridpoints/REV/32,97/stations",
+            "relative_city": "Tahoe Vista",
+            "relative_state": "CA"
+          }
+        },
+        "mid": {
+          "label": "Mid-Mountain",
+          "lat": 39.2582,
+          "lon": -120.1304,
+          "reported_elevation_ft": 7470,
+          "reported_elevation_m": 2276.9,
+          "dem_elevation_m": 2223.0,
+          "dem_elevation_ft": 7293
+        },
+        "summit": {
+          "label": "Mt. Pluto Summit",
+          "lat": 39.2416,
+          "lon": -120.1396,
+          "reported_elevation_ft": 8610,
+          "reported_elevation_m": 2624.3,
+          "dem_elevation_m": 2622.0,
+          "dem_elevation_ft": 8602,
+          "nws": {
+            "grid_id": "REV",
+            "grid_x": 31,
+            "grid_y": 96,
+            "forecast_grid_data_url": "https://api.weather.gov/gridpoints/REV/31,96",
+            "forecast_hourly_url": "https://api.weather.gov/gridpoints/REV/31,96/forecast/hourly",
+            "observation_stations_url": "https://api.weather.gov/gridpoints/REV/31,96/stations",
+            "relative_city": "Cedar Flat",
+            "relative_state": "CA"
+          }
+        }
+      },
+      "snotel_stations": [
+        {
+          "triplet": "834:CA:SNTL",
+          "name": "Truckee #2",
+          "state": "CA",
+          "county": "Placer",
+          "latitude": 39.30087,
+          "longitude": -120.18407,
+          "elevation_ft": 6500.0,
+          "elevation_m": 1981.2,
+          "distance_km": 6.62,
+          "distance_mi": 4.11
+        },
+        {
+          "triplet": "809:CA:SNTL",
+          "name": "Tahoe City Cross",
+          "state": "CA",
+          "county": "Placer",
+          "latitude": 39.17162,
+          "longitude": -120.15362,
+          "elevation_ft": 6760.0,
+          "elevation_m": 2060.4,
+          "distance_km": 9.83,
+          "distance_mi": 6.11
+        },
+        {
+          "triplet": "784:CA:SNTL",
+          "name": "Palisades Tahoe",
+          "state": "CA",
+          "county": "Placer",
+          "latitude": 39.18986,
+          "longitude": -120.26576,
+          "elevation_ft": 8010.0,
+          "elevation_m": 2441.4,
+          "distance_km": 13.92,
+          "distance_mi": 8.65
+        }
+      ]
+    },
+    {
+      "id": "heavenly",
+      "name": "Heavenly Mountain",
+      "region": "South Lake Tahoe",
+      "state": "CA",
+      "timezone": "America/Los_Angeles",
+      "cdec_candidates": [],
+      "bands": {
+        "base": {
+          "label": "California Base",
+          "lat": 38.9353,
+          "lon": -119.94,
+          "reported_elevation_ft": 6255,
+          "reported_elevation_m": 1906.5,
+          "dem_elevation_m": 2023.0,
+          "dem_elevation_ft": 6637,
+          "nws": {
+            "grid_id": "REV",
+            "grid_x": 36,
+            "grid_y": 81,
+            "forecast_grid_data_url": "https://api.weather.gov/gridpoints/REV/36,81",
+            "forecast_hourly_url": "https://api.weather.gov/gridpoints/REV/36,81/forecast/hourly",
+            "observation_stations_url": "https://api.weather.gov/gridpoints/REV/36,81/stations",
+            "relative_city": "South Lake Tahoe",
+            "relative_state": "CA"
+          }
+        },
+        "mid": {
+          "label": "Mid-Mountain",
+          "lat": 38.929,
+          "lon": -119.919,
+          "reported_elevation_ft": 8160,
+          "reported_elevation_m": 2487.2,
+          "dem_elevation_m": 2565.0,
+          "dem_elevation_ft": 8415
+        },
+        "summit": {
+          "label": "Monument Peak Summit",
+          "lat": 38.9227,
+          "lon": -119.8978,
+          "reported_elevation_ft": 10067,
+          "reported_elevation_m": 3068.4,
+          "dem_elevation_m": 3032.0,
+          "dem_elevation_ft": 9948,
+          "nws": {
+            "grid_id": "REV",
+            "grid_x": 37,
+            "grid_y": 80,
+            "forecast_grid_data_url": "https://api.weather.gov/gridpoints/REV/37,80",
+            "forecast_hourly_url": "https://api.weather.gov/gridpoints/REV/37,80/forecast/hourly",
+            "observation_stations_url": "https://api.weather.gov/gridpoints/REV/37,80/stations",
+            "relative_city": "Kingsbury",
+            "relative_state": "NV"
+          }
+        }
+      },
+      "snotel_stations": [
+        {
+          "triplet": "518:CA:SNTL",
+          "name": "Heavenly Valley",
+          "state": "CA",
+          "county": "El Dorado",
+          "latitude": 38.92431,
+          "longitude": -119.91641,
+          "elevation_ft": 8540.0,
+          "elevation_m": 2603.0,
+          "distance_km": 0.57,
+          "distance_mi": 0.35
+        },
+        {
+          "triplet": "508:CA:SNTL",
+          "name": "Hagans Meadow",
+          "state": "CA",
+          "county": "El Dorado",
+          "latitude": 38.8519,
+          "longitude": -119.9374,
+          "elevation_ft": 7740.0,
+          "elevation_m": 2359.2,
+          "distance_km": 8.72,
+          "distance_mi": 5.42
+        },
+        {
+          "triplet": "1050:CA:SNTL",
+          "name": "Horse Meadow",
+          "state": "CA",
+          "county": "Alpine",
+          "latitude": 38.83652,
+          "longitude": -119.88732,
+          "elevation_ft": 8580.0,
+          "elevation_m": 2615.2,
+          "distance_km": 10.64,
+          "distance_mi": 6.61
+        }
+      ]
+    },
+    {
+      "id": "kirkwood",
+      "name": "Kirkwood Mountain",
+      "region": "Sierra Crest",
+      "state": "CA",
+      "timezone": "America/Los_Angeles",
+      "cdec_candidates": [
+        "CAP",
+        "CXS"
+      ],
+      "bands": {
+        "base": {
+          "label": "Mountain Village Base",
+          "lat": 38.684,
+          "lon": -120.068,
+          "reported_elevation_ft": 7800,
+          "reported_elevation_m": 2377.4,
+          "dem_elevation_m": 2378.0,
+          "dem_elevation_ft": 7802,
+          "nws": {
+            "grid_id": "STO",
+            "grid_x": 91,
+            "grid_y": 63,
+            "forecast_grid_data_url": "https://api.weather.gov/gridpoints/STO/91,63",
+            "forecast_hourly_url": "https://api.weather.gov/gridpoints/STO/91,63/forecast/hourly",
+            "observation_stations_url": "https://api.weather.gov/gridpoints/STO/91,63/stations",
+            "relative_city": "Kirkwood",
+            "relative_state": "CA"
+          }
+        },
+        "mid": {
+          "label": "Mid-Mountain",
+          "lat": 38.6732,
+          "lon": -120.0643,
+          "reported_elevation_ft": 8800,
+          "reported_elevation_m": 2682.2,
+          "dem_elevation_m": 2618.0,
+          "dem_elevation_ft": 8589
+        },
+        "summit": {
+          "label": "Thimble Peak Summit",
+          "lat": 38.6624,
+          "lon": -120.0605,
+          "reported_elevation_ft": 9800,
+          "reported_elevation_m": 2987.0,
+          "dem_elevation_m": 2969.0,
+          "dem_elevation_ft": 9741,
+          "nws": {
+            "grid_id": "STO",
+            "grid_x": 91,
+            "grid_y": 62,
+            "forecast_grid_data_url": "https://api.weather.gov/gridpoints/STO/91,62",
+            "forecast_hourly_url": "https://api.weather.gov/gridpoints/STO/91,62/forecast/hourly",
+            "observation_stations_url": "https://api.weather.gov/gridpoints/STO/91,62/stations",
+            "relative_city": "Kirkwood",
+            "relative_state": "CA"
+          }
+        }
+      },
+      "snotel_stations": [
+        {
+          "triplet": "1067:CA:SNTL",
+          "name": "Carson Pass",
+          "state": "CA",
+          "county": "Alpine",
+          "latitude": 38.6927,
+          "longitude": -120.0022,
+          "elevation_ft": 8360.0,
+          "elevation_m": 2548.1,
+          "distance_km": 5.81,
+          "distance_mi": 3.61
+        },
+        {
+          "triplet": "1049:CA:SNTL",
+          "name": "Forestdale Creek",
+          "state": "CA",
+          "county": "Alpine",
+          "latitude": 38.68245,
+          "longitude": -119.9597,
+          "elevation_ft": 8050.0,
+          "elevation_m": 2453.6,
+          "distance_km": 9.14,
+          "distance_mi": 5.68
+        },
+        {
+          "triplet": "1331:CA:SNTL",
+          "name": "Lost Lakes",
+          "state": "CA",
+          "county": "Alpine",
+          "latitude": 38.64745,
+          "longitude": -119.95141,
+          "elevation_ft": 8640.0,
+          "elevation_m": 2633.5,
+          "distance_km": 10.21,
+          "distance_mi": 6.35
+        }
+      ]
+    },
+    {
+      "id": "park-city",
+      "name": "Park City Mountain",
+      "region": "Wasatch Back",
+      "state": "UT",
+      "timezone": "America/Denver",
+      "cdec_candidates": [],
+      "bands": {
+        "base": {
+          "label": "Park City Base",
+          "lat": 40.6508,
+          "lon": -111.5075,
+          "reported_elevation_ft": 6800,
+          "reported_elevation_m": 2072.6,
+          "dem_elevation_m": 2133.0,
+          "dem_elevation_ft": 6998,
+          "nws": {
+            "grid_id": "SLC",
+            "grid_x": 113,
+            "grid_y": 169,
+            "forecast_grid_data_url": "https://api.weather.gov/gridpoints/SLC/113,169",
+            "forecast_hourly_url": "https://api.weather.gov/gridpoints/SLC/113,169/forecast/hourly",
+            "observation_stations_url": "https://api.weather.gov/gridpoints/SLC/113,169/stations",
+            "relative_city": "Park City",
+            "relative_state": "UT"
+          }
+        },
+        "mid": {
+          "label": "Mid-Mountain",
+          "lat": 40.6321,
+          "lon": -111.5221,
+          "reported_elevation_ft": 8413,
+          "reported_elevation_m": 2564.3,
+          "dem_elevation_m": 2650.0,
+          "dem_elevation_ft": 8694
+        },
+        "summit": {
+          "label": "Jupiter Peak Summit",
+          "lat": 40.6133,
+          "lon": -111.5367,
+          "reported_elevation_ft": 10026,
+          "reported_elevation_m": 3055.9,
+          "dem_elevation_m": 2907.0,
+          "dem_elevation_ft": 9537,
+          "nws": {
+            "grid_id": "SLC",
+            "grid_x": 112,
+            "grid_y": 167,
+            "forecast_grid_data_url": "https://api.weather.gov/gridpoints/SLC/112,167",
+            "forecast_hourly_url": "https://api.weather.gov/gridpoints/SLC/112,167/forecast/hourly",
+            "observation_stations_url": "https://api.weather.gov/gridpoints/SLC/112,167/stations",
+            "relative_city": "Park City",
+            "relative_state": "UT"
+          }
+        }
+      },
+      "snotel_stations": [
+        {
+          "triplet": "814:UT:SNTL",
+          "name": "Thaynes Canyon",
+          "state": "UT",
+          "county": "Summit",
+          "latitude": 40.6235,
+          "longitude": -111.53322,
+          "elevation_ft": 9260.0,
+          "elevation_m": 2822.4,
+          "distance_km": 1.34,
+          "distance_mi": 0.83
+        },
+        {
+          "triplet": "366:UT:SNTL",
+          "name": "Brighton",
+          "state": "UT",
+          "county": "Salt Lake",
+          "latitude": 40.59936,
+          "longitude": -111.58167,
+          "elevation_ft": 8790.0,
+          "elevation_m": 2679.2,
+          "distance_km": 6.21,
+          "distance_mi": 3.86
+        },
+        {
+          "triplet": "628:UT:SNTL",
+          "name": "Mill-D North",
+          "state": "UT",
+          "county": "Salt Lake",
+          "latitude": 40.65883,
+          "longitude": -111.63683,
+          "elevation_ft": 8940.0,
+          "elevation_m": 2724.9,
+          "distance_km": 10.13,
+          "distance_mi": 6.29
+        }
+      ]
+    },
+    {
+      "id": "keystone",
+      "name": "Keystone Resort",
+      "region": "Summit County",
+      "state": "CO",
+      "timezone": "America/Denver",
+      "cdec_candidates": [],
+      "bands": {
+        "base": {
+          "label": "River Run Base",
+          "lat": 39.605,
+          "lon": -105.9542,
+          "reported_elevation_ft": 9280,
+          "reported_elevation_m": 2828.5,
+          "dem_elevation_m": 2831.0,
+          "dem_elevation_ft": 9288,
+          "nws": {
+            "grid_id": "BOU",
+            "grid_x": 29,
+            "grid_y": 58,
+            "forecast_grid_data_url": "https://api.weather.gov/gridpoints/BOU/29,58",
+            "forecast_hourly_url": "https://api.weather.gov/gridpoints/BOU/29,58/forecast/hourly",
+            "observation_stations_url": "https://api.weather.gov/gridpoints/BOU/29,58/stations",
+            "relative_city": "Keystone",
+            "relative_state": "CO"
+          }
+        },
+        "mid": {
+          "label": "Mid-Mountain (Dercum)",
+          "lat": 39.5792,
+          "lon": -105.9411,
+          "reported_elevation_ft": 11640,
+          "reported_elevation_m": 3547.9,
+          "dem_elevation_m": 3540.0,
+          "dem_elevation_ft": 11614
+        },
+        "summit": {
+          "label": "Bergman / Independence Ridge",
+          "lat": 39.5816,
+          "lon": -105.9101,
+          "reported_elevation_ft": 12408,
+          "reported_elevation_m": 3782.0,
+          "dem_elevation_m": 3819.0,
+          "dem_elevation_ft": 12530,
+          "nws": {
+            "grid_id": "BOU",
+            "grid_x": 30,
+            "grid_y": 57,
+            "forecast_grid_data_url": "https://api.weather.gov/gridpoints/BOU/30,57",
+            "forecast_hourly_url": "https://api.weather.gov/gridpoints/BOU/30,57/forecast/hourly",
+            "observation_stations_url": "https://api.weather.gov/gridpoints/BOU/30,57/stations",
+            "relative_city": "Keystone",
+            "relative_state": "CO"
+          }
+        }
+      },
+      "snotel_stations": [
+        {
+          "triplet": "505:CO:SNTL",
+          "name": "Grizzly Peak",
+          "state": "CO",
+          "county": "Summit",
+          "latitude": 39.64646,
+          "longitude": -105.8694,
+          "elevation_ft": 11110.0,
+          "elevation_m": 3386.3,
+          "distance_km": 9.68,
+          "distance_mi": 6.01
+        },
+        {
+          "triplet": "602:CO:SNTL",
+          "name": "Loveland Basin",
+          "state": "CO",
+          "county": "Clear Creek",
+          "latitude": 39.67428,
+          "longitude": -105.90264,
+          "elevation_ft": 11410.0,
+          "elevation_m": 3477.8,
+          "distance_km": 11.07,
+          "distance_mi": 6.88
+        },
+        {
+          "triplet": "935:CO:SNTL",
+          "name": "Jackwhacker Gulch",
+          "state": "CO",
+          "county": "Clear Creek",
+          "latitude": 39.57096,
+          "longitude": -105.80355,
+          "elevation_ft": 11030.0,
+          "elevation_m": 3361.9,
+          "distance_km": 11.82,
+          "distance_mi": 7.35
+        }
+      ]
+    }
+  ]
+}

@@ -57,3 +57,21 @@ Backups.backupdb
 .MobileBackups.trash
 MobileBackups.trash
 tmbootpicker.efi
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Project data & local DB
+backend/data/
+*.db
+*.sqlite3
+.env
+
+# Node / Frontend
+node_modules/
+dist/
