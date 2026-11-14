@@ -19,21 +19,41 @@ Personal ski resort snow forecast engine and dashboard using public meteorologic
 ## Roadmap
 - **Step 1 (Done):** Resort registry (`backend/app/resorts.json`) + station & NWS grid discovery (`discover_stations.py`)
 - **Step 2 (Done):** Multi-model, NWS, SNOTEL, and CDEC ingestion (`fetch_snapshot.py`)
-- **Step 3:** Custom snow physics (dynamic Kuchera/DGZ SLR, snow level warnings, compaction) & consensus blending
-- **Step 4:** SQLite historical store + FastAPI REST API
+- **Step 3 (Done):** Custom snow physics (wet-bulb partitioning, dynamic SLR + wind compaction, storm settling) & consensus blending (`app/engine/`)
+- **Step 4 (Done):** SQLite historical store (`data/snow.db`) + FastAPI REST API (`app/main.py`) + refresh pipeline (`app/scripts/update.py`)
 - **Step 5:** React + Tailwind dashboard UI
 
-## Running Step 1 & Step 2
+## Running the Backend (Steps 1–4)
 
-From `backend/`:
+From `backend/` (using the virtual environment):
 
 ```bash
-# Run offline unit tests
-python3 -m unittest discover -s tests -v
+# Install dependencies
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+
+# Run unit & API tests
+.venv/bin/pytest tests -v
 
 # Step 1: Discover DEM elevations, NWS gridpoints, and nearest SNOTEL stations -> app/resorts.json
-python3 -m app.scripts.discover_stations
+.venv/bin/python -m app.scripts.discover_stations
 
-# Step 2: Fetch live forecasts & telemetry, print comparison table, save data/latest_snapshot.json
-python3 -m app.scripts.fetch_snapshot
+# Step 2: Fetch raw forecasts & telemetry -> data/latest_snapshot.json
+.venv/bin/python -m app.scripts.fetch_snapshot
+
+# Steps 3 & 4: Fetch live data, run snow physics + consensus engine, and store in SQLite (data/snow.db)
+.venv/bin/python -m app.scripts.update
+# Or reprocess the latest saved snapshot offline:
+.venv/bin/python -m app.scripts.update --from-snapshot
+
+# Start the FastAPI server (port 8000)
+.venv/bin/uvicorn app.main:app --reload --port 8000
 ```
+
+### API Endpoints
+- `GET /api/health` — API & latest SQLite forecast run status
+- `GET /api/runs` — Recent forecast runs stored in SQLite
+- `GET /api/resorts` — Overview cards for all 5 resorts (24h/48h/72h/5d/7d Base/Mid/Summit consensus, snow level, confidence, primary SNOTEL/CDEC, run-to-run deltas)
+- `GET /api/resorts/{resort_id}` — Detailed 168h consensus timeline, individual model breakdowns, local-timezone daily rollups, and station telemetry
+- `GET /api/resorts/{resort_id}/history` — Historical SNOTEL/CDEC time series and run-to-run forecast trends
+- `POST /api/refresh` — Trigger a live multi-source fetch, physics/consensus run, and SQLite save

@@ -116,6 +116,9 @@ def fetch_all_data(
             band_forecasts[band_key] = {
                 "label": band["label"],
                 "elevation_ft": band["reported_elevation_ft"],
+                "elevation_m": band["reported_elevation_m"],
+                "lat": band["lat"],
+                "lon": band["lon"],
                 "open_meteo": om_data,
                 "met_no": met_data,
                 "nws": nws_data,
@@ -144,6 +147,7 @@ def fetch_all_data(
                 "name": resort["name"],
                 "region": resort["region"],
                 "state": resort["state"],
+                "timezone": resort.get("timezone"),
                 "bands": band_forecasts,
                 "observations": {
                     "snotel": resort_snotel,
