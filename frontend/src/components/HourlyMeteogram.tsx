@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { COPY, type Lang } from "../i18n";
 import type { HourlyConsensusPoint } from "../types";
 import {
   fToCelsius,
@@ -19,9 +20,10 @@ interface HourlyMeteogramProps {
   midElevFt: number;
   summitElevFt: number;
   isDark?: boolean;
+  lang?: Lang;
 }
 
-type HorizonOption = 48 | 72 | 168;
+const MAX_HORIZON_HOURS = 168;
 
 export function HourlyMeteogram({
   hourly,
@@ -31,9 +33,10 @@ export function HourlyMeteogram({
   midElevFt,
   summitElevFt,
   isDark = false,
+  lang = "zh",
 }: HourlyMeteogramProps) {
-  const [horizon, setHorizon] = useState<HorizonOption>(168);
   const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+  const t = COPY[lang].hourly;
 
   const svgColors = isDark
     ? {
@@ -67,7 +70,7 @@ export function HourlyMeteogram({
         crosshair: "rgba(15, 23, 42, 0.55)",
       };
 
-  const visible = useMemo(() => hourly.slice(0, horizon), [hourly, horizon]);
+  const visible = useMemo(() => hourly.slice(0, MAX_HORIZON_HOURS), [hourly]);
 
   const cumulativeSnowIn = useMemo(() => {
     const out: number[] = [];
@@ -179,34 +182,13 @@ export function HourlyMeteogram({
 
   return (
     <div className="rounded-xl border border-slate-200/90 bg-white/90 p-4 shadow-xs md:p-5 space-y-4 dark:border-slate-800/90 dark:bg-slate-900/65 dark:shadow-none">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200/80 pb-3 dark:border-slate-800/70">
-        <div>
-          <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-            Hourly Snowfall &amp; Snow Level Forecast · {bandLabel}
-          </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Hover over the charts for hour-by-hour snowfall rate, storm total, snow level vs. resort elevations, and temperature
-          </p>
-        </div>
-        <div className="inline-flex rounded-lg border border-slate-200 bg-slate-100/90 p-0.5 text-xs dark:border-slate-700/80 dark:bg-slate-950/75">
-          {([48, 72, 168] as HorizonOption[]).map((h) => (
-            <button
-              key={h}
-              type="button"
-              onClick={() => {
-                setHorizon(h);
-                setHoverIdx(null);
-              }}
-              className={`rounded-md px-2.5 py-1 font-medium transition ${
-                horizon === h
-                  ? "bg-white text-sky-700 shadow-xs ring-1 ring-slate-200/80 dark:bg-sky-500/20 dark:text-sky-200 dark:ring-0"
-                  : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
-              }`}
-            >
-              {h === 168 ? "7d (168h)" : `${h}h`}
-            </button>
-          ))}
-        </div>
+      <div className="border-b border-slate-200/80 pb-3 dark:border-slate-800/70">
+        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+          {t.titlePrefix} · {bandLabel}
+        </h3>
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          {t.subtitle}
+        </p>
       </div>
 
       {/* Live Scrub Readout Strip */}
@@ -216,7 +198,7 @@ export function HourlyMeteogram({
             {formatLocalHourTick(activePt.time_utc, timezone, true)}
           </span>
           <span className="tabular-nums text-slate-600 dark:text-slate-300">
-            Rate:{" "}
+            {t.rateLabel}{" "}
             <strong className="text-sky-700 dark:text-sky-300">
               {inToCm(activePt.snow_median_in).toFixed(1)} cm/h
             </strong>{" "}
@@ -225,10 +207,10 @@ export function HourlyMeteogram({
             </span>
           </span>
           <span className="tabular-nums text-slate-600 dark:text-slate-300">
-            Cum: <strong className="text-cyan-700 dark:text-cyan-200">{formatSnowCm(activeCumIn)}</strong>
+            {t.cumLabel} <strong className="text-cyan-700 dark:text-cyan-200">{formatSnowCm(activeCumIn)}</strong>
           </span>
           <span className="tabular-nums text-slate-600 dark:text-slate-300">
-            Settled:{" "}
+            {t.settledLabel}{" "}
             <strong className="text-emerald-700 dark:text-emerald-300">
               {formatSnowCm(activePt.settled_snow_in)}
             </strong>
@@ -236,22 +218,22 @@ export function HourlyMeteogram({
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 tabular-nums text-slate-600 dark:text-slate-300">
           <span>
-            Temp:{" "}
+            {t.tempLabel}{" "}
             <strong className="text-violet-700 dark:text-violet-300">
               {formatTempC(activePt.temp_median_f)}
             </strong>
           </span>
           <span>
-            Snow Lvl:{" "}
+            {t.snowLvlLabel}{" "}
             <strong className="text-amber-700 dark:text-amber-300">
               {formatElevM(activePt.snow_level_median_ft)}
             </strong>
           </span>
           <span>
-            Wind: <strong className="text-slate-900 dark:text-slate-100">{formatWindKmh(activePt.wind_median_mph)}</strong>
+            {t.windLabel} <strong className="text-slate-900 dark:text-slate-100">{formatWindKmh(activePt.wind_median_mph)}</strong>
           </span>
           <span className="text-slate-500 dark:text-slate-400">
-            SLR {activePt.slr_median !== null ? `${activePt.slr_median.toFixed(1)}:1` : "—"} ·{" "}
+            {t.slrLabel} {activePt.slr_median !== null ? `${activePt.slr_median.toFixed(1)}:1` : "—"} ·{" "}
             {activePt.model_count}m
           </span>
         </div>
@@ -261,21 +243,21 @@ export function HourlyMeteogram({
       <div className="space-y-1">
         <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
           <span className="font-medium text-slate-700 dark:text-slate-300">
-            Snowfall Rate (cm/h) &amp; Storm Total
+            {t.panelATitle}
           </span>
           <div className="flex flex-wrap items-center gap-4">
             <span className="inline-flex items-center gap-1.5">
-              <span className="inline-block h-2 w-2 rounded-xs bg-sky-600 dark:bg-sky-400" /> Hourly median
+              <span className="inline-block h-2 w-2 rounded-xs bg-sky-600 dark:bg-sky-400" /> {t.hourlyMedian}
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="inline-block h-2 w-2 rounded-xs bg-sky-500/25 dark:bg-sky-400/25" /> Hourly max
+              <span className="inline-block h-2 w-2 rounded-xs bg-sky-500/25 dark:bg-sky-400/25" /> {t.hourlyMax}
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="inline-block h-0.5 w-4 bg-cyan-600 dark:bg-cyan-300" /> Cumulative snow
+              <span className="inline-block h-0.5 w-4 bg-cyan-600 dark:bg-cyan-300" /> {t.cumulativeSnow}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="inline-block h-0.5 w-4 border-t-2 border-dashed border-emerald-600 dark:border-emerald-400" />{" "}
-              Settled depth
+              {t.settledDepth}
             </span>
           </div>
         </div>
@@ -388,16 +370,16 @@ export function HourlyMeteogram({
       <div className="space-y-1">
         <div className="flex flex-wrap items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
           <span className="font-medium text-slate-700 dark:text-slate-300">
-            Snow Level (m) vs Resort Elevations &amp; Temp (°C)
+            {t.panelBTitle}
           </span>
           <div className="flex items-center gap-4">
             <span className="inline-flex items-center gap-1.5">
-              <span className="inline-block h-0.5 w-4 bg-amber-600 dark:bg-amber-400" /> Snow level (m)
+              <span className="inline-block h-0.5 w-4 bg-amber-600 dark:bg-amber-400" /> {t.snowLevelLegend}
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="inline-block h-0.5 w-4 bg-violet-600 dark:bg-violet-400" /> Air temp (°C)
+              <span className="inline-block h-0.5 w-4 bg-violet-600 dark:bg-violet-400" /> {t.airTempLegend}
             </span>
-            <span className="text-slate-500">Dashed lines: Base / Mid / Summit (m)</span>
+            <span className="text-slate-500">{t.dashedLinesLegend}</span>
           </div>
         </div>
 

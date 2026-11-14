@@ -1,3 +1,4 @@
+import { COPY, type Lang } from "../i18n";
 import type { BandDetail, WindowKey } from "../types";
 import {
   formatElevM,
@@ -9,6 +10,7 @@ import {
 
 interface ModelComparisonTableProps {
   band: BandDetail;
+  lang?: Lang;
 }
 
 const MODEL_ORDER = [
@@ -24,7 +26,8 @@ const MODEL_ORDER = [
 
 const WINDOWS: WindowKey[] = ["24h", "48h", "72h", "120h", "168h"];
 
-export function ModelComparisonTable({ band }: ModelComparisonTableProps) {
+export function ModelComparisonTable({ band, lang = "zh" }: ModelComparisonTableProps) {
+  const t = COPY[lang].models;
   const models = Object.values(band.models).sort((a, b) => {
     const ia = MODEL_ORDER.indexOf(a.id);
     const ib = MODEL_ORDER.indexOf(b.id);
@@ -37,26 +40,30 @@ export function ModelComparisonTable({ band }: ModelComparisonTableProps) {
     <div className="rounded-xl border border-slate-200/90 bg-white/90 p-4 shadow-xs md:p-5 dark:border-slate-800/90 dark:bg-slate-900/65 dark:shadow-none">
       <div className="pb-3 border-b border-slate-200/80 dark:border-slate-800/70">
         <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-          Forecast by Weather Model · {band.label} ({formatElevM(band.elevation_ft, band.elevation_m)})
+          {t.titlePrefix} · {band.label} ({formatElevM(band.elevation_ft, band.elevation_m)})
         </h3>
         <p className="text-xs text-slate-500 dark:text-slate-400">
-          Side-by-side totals using unified snow-density physics (short-range models like HRRR only cover earlier windows)
+          {t.subtitle}
         </p>
       </div>
 
       <div className="mt-3 overflow-x-auto">
         <table className="w-full min-w-[680px] text-left text-xs">
           <thead>
-            <tr className="border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:text-slate-400">
-              <th className="py-2 pr-3 font-medium">Weather Model</th>
-              <th className="py-2 px-2 font-medium">Horizon</th>
-              <th className="py-2 px-2 font-medium">24h</th>
-              <th className="py-2 px-2 font-medium">48h</th>
-              <th className="py-2 px-2 font-medium">72h</th>
-              <th className="py-2 px-2 font-medium">5d</th>
-              <th className="py-2 px-2 font-medium">7d</th>
-              <th className="py-2 px-2 font-medium">72h SLR</th>
-              <th className="py-2 pl-2 font-medium text-right">72h Temp · Wind</th>
+            <tr
+              className={`border-b border-slate-200 text-[11px] text-slate-500 dark:border-slate-800 dark:text-slate-400 ${
+                lang === "en" ? "uppercase tracking-wider" : ""
+              }`}
+            >
+              <th className="py-2 pr-3 font-medium">{t.colModel}</th>
+              <th className="py-2 px-2 font-medium">{t.colHorizon}</th>
+              <th className="py-2 px-2 font-medium">{t.col24h}</th>
+              <th className="py-2 px-2 font-medium">{t.col48h}</th>
+              <th className="py-2 px-2 font-medium">{t.col72h}</th>
+              <th className="py-2 px-2 font-medium">{t.col5d}</th>
+              <th className="py-2 px-2 font-medium">{t.col7d}</th>
+              <th className="py-2 px-2 font-medium">{t.col72hSlr}</th>
+              <th className="py-2 pl-2 font-medium text-right">{t.col72hTempWind}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200/80 tabular-nums dark:divide-slate-800/60">
@@ -65,10 +72,10 @@ export function ModelComparisonTable({ band }: ModelComparisonTableProps) {
               <td className="py-2.5 pr-3">
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-sky-500 dark:bg-sky-400" />
-                  <span>Consensus Median</span>
+                  <span>{t.consensusMedian}</span>
                 </div>
                 <div className="pl-4 text-[10px] font-normal text-slate-500 dark:text-slate-400">
-                  min–max spread
+                  {t.minMaxSpread}
                 </div>
               </td>
               <td className="py-2.5 px-2 text-slate-500 dark:text-slate-400">168h</td>
@@ -108,7 +115,7 @@ export function ModelComparisonTable({ band }: ModelComparisonTableProps) {
                   <td className="py-2 pr-3">
                     <div className="font-medium text-slate-900 dark:text-slate-200">{m.display_name}</div>
                     <div className="text-[10px] text-slate-500">
-                      raw native ({rawLabel}): {formatSnowCm(rawVal)}
+                      {t.rawNativePrefix} ({rawLabel}): {formatSnowCm(rawVal)}
                     </div>
                   </td>
                   <td className="py-2 px-2">
@@ -133,7 +140,7 @@ export function ModelComparisonTable({ band }: ModelComparisonTableProps) {
                       <td
                         key={wk}
                         className={`py-2 px-2 ${beyondHorizon ? "text-slate-400 dark:text-slate-600" : "text-slate-800 dark:text-slate-200"}`}
-                        title={beyondHorizon ? `Model stops at ${m.coverage_hours}h` : undefined}
+                        title={beyondHorizon ? t.stopsAtTitle(m.coverage_hours) : undefined}
                       >
                         {beyondHorizon ? "—" : formatSnowCm(winSnow)}
                       </td>

@@ -1,3 +1,4 @@
+import type { Lang } from "../i18n";
 import type { RainSnowRisk } from "../types";
 
 export type SlrQuality = "wet" | "normal" | "powder";
@@ -146,14 +147,14 @@ export function slrBadgeClass(quality: SlrQuality): string {
   }
 }
 
-export function slrTitle(quality: SlrQuality): string {
+export function slrTitle(quality: SlrQuality, lang: Lang = "en"): string {
   switch (quality) {
     case "wet":
-      return "Wet / dense snow (<10:1)";
+      return lang === "zh" ? "湿重雪 (<10:1)" : "Wet / dense snow (<10:1)";
     case "normal":
-      return "Normal snow density (10–14.9:1)";
+      return lang === "zh" ? "常规雪密度 (10–14.9:1)" : "Normal snow density (10–14.9:1)";
     case "powder":
-      return "Light powder (≥15:1)";
+      return lang === "zh" ? "蓬松粉雪 (≥15:1)" : "Light powder (≥15:1)";
   }
 }
 
@@ -168,14 +169,14 @@ export function riskBadgeClass(risk: RainSnowRisk): string {
   }
 }
 
-export function riskLabel(risk: RainSnowRisk): string {
+export function riskLabel(risk: RainSnowRisk, lang: Lang = "en"): string {
   switch (risk) {
     case "snow":
-      return "Snow";
+      return lang === "zh" ? "纯雪" : "Snow";
     case "mixed":
-      return "Mixed rain/snow";
+      return lang === "zh" ? "雨夹雪" : "Mixed rain/snow";
     case "rain":
-      return "Rain";
+      return lang === "zh" ? "降雨" : "Rain";
   }
 }
 
@@ -205,12 +206,16 @@ export function windRiskBadgeClass(level: WindRiskLevel): string {
   }
 }
 
-export function windRiskTitle(level: WindRiskLevel): string | undefined {
+export function windRiskTitle(level: WindRiskLevel, lang: Lang = "en"): string | undefined {
   switch (level) {
     case "high":
-      return "Very likely lifts will close (gusts ≥72 km/h or wind ≥55 km/h)";
+      return lang === "zh"
+        ? "缆车极可能停运 (阵风 ≥72 km/h 或风速 ≥55 km/h)"
+        : "Very likely lifts will close (gusts ≥72 km/h or wind ≥55 km/h)";
     case "caution":
-      return "Lifts may close, especially high-elevation ones (gusts ≥55 km/h or wind ≥40 km/h)";
+      return lang === "zh"
+        ? "高海拔缆车可能停运 (阵风 ≥55 km/h 或风速 ≥40 km/h)"
+        : "Lifts may close, especially high-elevation ones (gusts ≥55 km/h or wind ≥40 km/h)";
     case "none":
       return undefined;
   }

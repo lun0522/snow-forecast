@@ -1,25 +1,28 @@
+import { COPY, type Lang } from "../i18n";
 import type { CurrentSnowpack } from "../types";
 import { formatLocalHourTick } from "../utils/format";
 
 interface SnowpackPanelProps {
   snowpack: CurrentSnowpack | null | undefined;
   timezone: string;
+  lang?: Lang;
 }
 
-export function SnowpackPanel({ snowpack, timezone }: SnowpackPanelProps) {
+export function SnowpackPanel({ snowpack, timezone, lang = "zh" }: SnowpackPanelProps) {
   if (!snowpack) {
     return null;
   }
+  const t = COPY[lang].snowpack;
 
   return (
     <div className="rounded-xl border border-slate-200/90 bg-white/90 px-4 py-3.5 shadow-xs md:px-5 dark:border-slate-800/90 dark:bg-slate-900/65 dark:shadow-none">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div className="flex flex-wrap items-baseline gap-2">
           <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-            Current Base Depth (Natural Snow)
+            {t.title}
           </h3>
           <span className="text-xs text-slate-500 dark:text-slate-400">
-            · Excludes snowmaking &amp; groomed trails
+            · {t.subtitle}
           </span>
         </div>
       </div>
@@ -62,7 +65,7 @@ export function SnowpackPanel({ snowpack, timezone }: SnowpackPanelProps) {
                     )}
                   </div>
                   <div className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-                    {st.swe_mm !== null ? `${st.swe_mm.toFixed(0)} mm SWE` : st.id}
+                    {st.swe_mm !== null ? `${st.swe_mm.toFixed(0)} mm ${t.sweUnit}` : st.id}
                   </div>
                 </div>
               </div>
@@ -71,7 +74,7 @@ export function SnowpackPanel({ snowpack, timezone }: SnowpackPanelProps) {
         </div>
       ) : (
         <p className="mt-2 text-xs text-slate-500">
-          {snowpack.error || "Nearby automated snow telemetry is currently unavailable."}
+          {snowpack.error || t.unavailable}
         </p>
       )}
     </div>

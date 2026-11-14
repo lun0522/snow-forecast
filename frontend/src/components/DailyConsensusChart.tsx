@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { COPY, type Lang } from "../i18n";
 import type { DailyBucket } from "../types";
 import {
   formatElevM,
@@ -26,6 +27,7 @@ interface DailyConsensusChartProps {
   elevationM?: number | null;
   bandLabel: string;
   isDark?: boolean;
+  lang?: Lang;
 }
 
 export function DailyConsensusChart({
@@ -34,8 +36,10 @@ export function DailyConsensusChart({
   elevationM,
   bandLabel,
   isDark = false,
+  lang = "zh",
 }: DailyConsensusChartProps) {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
+  const t = COPY[lang].daily;
 
   const svgColors = isDark
     ? {
@@ -90,10 +94,10 @@ export function DailyConsensusChart({
     <div className="rounded-xl border border-slate-200/90 bg-white/90 p-4 shadow-xs md:p-5 dark:border-slate-800/90 dark:bg-slate-900/65 dark:shadow-none">
       <div className="pb-3 border-b border-slate-200/80 dark:border-slate-800/70">
         <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-          7-Day Snow Forecast · {bandLabel} ({formatElevM(elevationFt, elevationM)})
+          {t.titlePrefix} · {bandLabel} ({formatElevM(elevationFt, elevationM)})
         </h3>
         <p className="text-xs text-slate-500 dark:text-slate-400">
-          Bars show median snowfall (cm) across models; vertical lines show the min–max model range per day
+          {t.subtitle}
         </p>
       </div>
 
@@ -227,14 +231,18 @@ export function DailyConsensusChart({
       <div className="mt-4 overflow-x-auto">
         <table className="w-full min-w-[660px] text-left text-xs">
           <thead>
-            <tr className="border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500 dark:border-slate-800 dark:text-slate-400">
-              <th className="py-2 pr-3 font-medium">Local Day</th>
-              <th className="py-2 px-3 font-medium">Snow Median (Range)</th>
-              <th className="py-2 px-3 font-medium">QPF</th>
-              <th className="py-2 px-3 font-medium">SLR</th>
-              <th className="py-2 px-3 font-medium">Temp Lo / Hi</th>
-              <th className="py-2 px-3 font-medium">Max Wind / Gust</th>
-              <th className="py-2 pl-3 font-medium">Snow Level</th>
+            <tr
+              className={`border-b border-slate-200 text-[11px] text-slate-500 dark:border-slate-800 dark:text-slate-400 ${
+                lang === "en" ? "uppercase tracking-wider" : ""
+              }`}
+            >
+              <th className="py-2 pr-3 font-medium">{t.colDay}</th>
+              <th className="py-2 px-3 font-medium">{t.colSnowMedian}</th>
+              <th className="py-2 px-3 font-medium">{t.colQpf}</th>
+              <th className="py-2 px-3 font-medium">{t.colSlr}</th>
+              <th className="py-2 px-3 font-medium">{t.colTemp}</th>
+              <th className="py-2 px-3 font-medium">{t.colWind}</th>
+              <th className="py-2 pl-3 font-medium">{t.colSnowLevel}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200/80 tabular-nums dark:divide-slate-800/60">
@@ -272,7 +280,7 @@ export function DailyConsensusChart({
                   </td>
                   <td className="py-2 px-3 text-slate-700 dark:text-slate-300">
                     <span
-                      title={slrTitle(slrQuality)}
+                      title={slrTitle(slrQuality, lang)}
                       className={slrBadge ? `${BADGE_PILL_BASE} ${slrBadge}` : "whitespace-nowrap"}
                     >
                       {day.avg_slr.toFixed(1)}:1
@@ -280,7 +288,7 @@ export function DailyConsensusChart({
                   </td>
                   <td className="py-2 px-3 text-slate-700 dark:text-slate-300">
                     <span
-                      title={`Phase: ${riskLabel(day.rain_snow_risk)}`}
+                      title={`${t.phasePrefix} ${riskLabel(day.rain_snow_risk, lang)}`}
                       className={tempBadge ? `${BADGE_PILL_BASE} ${tempBadge}` : "whitespace-nowrap"}
                     >
                       {formatTempC(day.temp_min_f)} / {formatTempC(day.temp_max_f)}
@@ -288,7 +296,7 @@ export function DailyConsensusChart({
                   </td>
                   <td className="py-2 px-3 text-slate-700 dark:text-slate-300">
                     <span
-                      title={windRiskTitle(windRisk)}
+                      title={windRiskTitle(windRisk, lang)}
                       className={windBadge ? `${BADGE_PILL_BASE} ${windBadge}` : "whitespace-nowrap"}
                     >
                       {day.max_wind_mph !== null ? `${Math.round(mphToKmh(day.max_wind_mph))} km/h` : "—"}
@@ -308,30 +316,30 @@ export function DailyConsensusChart({
       {/* Compact Color Key for SLR, Temp Phase & Wind Lift Risk */}
       <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-5 gap-y-1.5 text-[11px] text-slate-500 dark:text-slate-400">
         <div className="flex flex-wrap items-center gap-3">
-          <span>SLR:</span>
+          <span>{t.slrLabel}</span>
           <span className="inline-flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-xs bg-amber-500 dark:bg-amber-400/80" /> Wet (&lt;10:1)
+            <span className="inline-block h-2 w-2 rounded-xs bg-amber-500 dark:bg-amber-400/80" /> {t.wetSnow}
           </span>
           <span className="inline-flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-xs bg-sky-500 dark:bg-sky-400/80" /> Powder (≥15:1)
-          </span>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <span>Temp:</span>
-          <span className="inline-flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-xs bg-amber-500 dark:bg-amber-400/80" /> Mixed
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-xs bg-rose-500 dark:bg-rose-400/80" /> Rain
+            <span className="inline-block h-2 w-2 rounded-xs bg-sky-500 dark:bg-sky-400/80" /> {t.powderSnow}
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-3">
-          <span>Wind lift risk:</span>
+          <span>{t.tempLabel}</span>
           <span className="inline-flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-xs bg-amber-500 dark:bg-amber-400/80" /> High lifts may close (≥55 km/h gust)
+            <span className="inline-block h-2 w-2 rounded-xs bg-amber-500 dark:bg-amber-400/80" /> {t.mixed}
           </span>
           <span className="inline-flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-xs bg-rose-500 dark:bg-rose-400/80" /> Lifts likely closed (≥72 km/h gust)
+            <span className="inline-block h-2 w-2 rounded-xs bg-rose-500 dark:bg-rose-400/80" /> {t.rain}
+          </span>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <span>{t.windRiskLabel}</span>
+          <span className="inline-flex items-center gap-1">
+            <span className="inline-block h-2 w-2 rounded-xs bg-amber-500 dark:bg-amber-400/80" /> {t.windHold}
+          </span>
+          <span className="inline-flex items-center gap-1">
+            <span className="inline-block h-2 w-2 rounded-xs bg-rose-500 dark:bg-rose-400/80" /> {t.windClosed}
           </span>
         </div>
       </div>
