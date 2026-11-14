@@ -14,6 +14,7 @@ from app.engine.physics import (
     estimate_snow_level_m,
 )
 from app.geo import c_to_f, kph_to_mph, meters_to_feet, mm_to_inches
+from app.time_utils import floor_utc_hour, parse_utc
 
 HORIZON_HOURS = 168
 STANDARD_WINDOWS_HOURS = (24, 48, 72, 120, 168)
@@ -28,21 +29,6 @@ MODEL_DISPLAY_NAMES: dict[str, str] = {
     "met_no": "MET Norway / ECMWF (9km)",
     "nws_gridpoints": "NWS NDFD Gridpoints (2.5km)",
 }
-
-
-def parse_utc(ts: str) -> datetime:
-    """Parse an ISO-8601 timestamp string as an aware UTC datetime."""
-    clean = ts.replace("Z", "+00:00")
-    dt = datetime.fromisoformat(clean)
-    if dt.tzinfo is None:
-        return dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc)
-
-
-def floor_utc_hour(dt: datetime) -> datetime:
-    """Floor an aware datetime to the start of its UTC hour."""
-    utc = dt.astimezone(timezone.utc)
-    return utc.replace(minute=0, second=0, microsecond=0)
 
 
 def _quantile(sorted_vals: list[float], q: float) -> float:
@@ -103,10 +89,8 @@ def _blank_hourly_slot(hour_dt: datetime) -> dict[str, Any]:
         "rh_pct": None,
         "wind_mph": None,
         "wind_gust_mph": None,
-        "wind_dir_deg": None,
         "freezing_level_m": None,
         "snow_level_m": None,
-        "pop_pct": None,
     }
 
 
@@ -136,9 +120,7 @@ def _build_physics_series(
                     "wet_bulb_f": None,
                     "wind_mph": None,
                     "wind_gust_mph": None,
-                    "wind_dir_deg": None,
                     "snow_level_ft": None,
-                    "pop_pct": None,
                 }
             )
             hourly_snow.append(0.0)
@@ -176,11 +158,7 @@ def _build_physics_series(
             "wind_gust_mph": (
                 round(slot["wind_gust_mph"], 1) if slot["wind_gust_mph"] is not None else None
             ),
-            "wind_dir_deg": (
-                round(slot["wind_dir_deg"]) if slot["wind_dir_deg"] is not None else None
-            ),
             "snow_level_ft": round(meters_to_feet(eff_snow_lvl_m)) if eff_snow_lvl_m is not None else None,
-            "pop_pct": slot["pop_pct"],
         }
         enriched.append(row)
         hourly_snow.append(float(phys["physics_snow_in"] or 0.0))
@@ -227,7 +205,6 @@ def _normalize_open_meteo_model(
         slot["rh_pct"] = src.get("rh_pct")
         slot["wind_mph"] = src.get("wind_mph")
         slot["wind_gust_mph"] = src.get("wind_gust_mph")
-        slot["wind_dir_deg"] = src.get("wind_dir_deg")
         slot["freezing_level_m"] = src.get("freezing_level_m")
 
     return _build_physics_series(grid, band_elevation_m)
@@ -302,8 +279,6 @@ def _normalize_met_no(
                 slot["rh_pct"] = iv.get("rh_pct")
                 slot["wind_mph"] = iv.get("wind_mph")
                 slot["wind_gust_mph"] = iv.get("wind_gust_mph")
-                slot["wind_dir_deg"] = iv.get("wind_dir_deg")
-                slot["pop_pct"] = iv.get("pop_pct")
 
     return _build_physics_series(grid, band_elevation_m)
 
@@ -355,7 +330,6 @@ def _normalize_nws(
     snow_lvl_entries = _preparse_entries(layers.get("snow_level_m") or [])
     wind_entries = _preparse_entries(layers.get("wind_speed_kph") or [])
     gust_entries = _preparse_entries(layers.get("wind_gust_kph") or [])
-    pop_entries = _preparse_entries(layers.get("probability_of_precipitation_pct") or [])
 
     for idx, slot in enumerate(grid):
         h_start = anchor_utc + timedelta(hours=idx)
@@ -364,7 +338,6 @@ def _normalize_nws(
         snow_lvl_m = _pick_interval_value(snow_lvl_entries, h_start, h_end)
         wind_kph = _pick_interval_value(wind_entries, h_start, h_end)
         gust_kph = _pick_interval_value(gust_entries, h_start, h_end)
-        pop_pct = _pick_interval_value(pop_entries, h_start, h_end)
 
         if qpf_cov[idx] or snow_cov[idx] or temp_c is not None:
             slot["covered"] = True
@@ -374,7 +347,6 @@ def _normalize_nws(
             slot["snow_level_m"] = snow_lvl_m
             slot["wind_mph"] = kph_to_mph(wind_kph) if wind_kph is not None else None
             slot["wind_gust_mph"] = kph_to_mph(gust_kph) if gust_kph is not None else None
-            slot["pop_pct"] = pop_pct
 
     return _build_physics_series(grid, band_elevation_m)
 
@@ -635,7 +607,7 @@ def process_band_snapshot(
         indices = list(range(min(win_h, horizon_hours)))
         windows[f"{win_h}h"] = _aggregate_consensus_slice(indices, model_series, min_coverage_ratio=0.88)
 
-    # Individual model breakdown (windows + coverage + hourly)
+    # Individual model breakdown (windows + coverage)
     models_out: dict[str, Any] = {}
     for model_id, rows in model_series.items():
         covered_hours = sum(1 for r in rows if r["covered"])
@@ -650,7 +622,6 @@ def process_band_snapshot(
             "display_name": MODEL_DISPLAY_NAMES.get(model_id, model_id),
             "coverage_hours": covered_hours,
             "windows": model_windows,
-            "hourly": rows,
         }
 
     # Consensus hourly timeline
@@ -704,6 +675,7 @@ def build_resort_summary(processed_resort: dict[str, Any], fetched_at_utc: str) 
         "state": processed_resort["state"],
         "timezone": processed_resort["timezone"],
         "fetched_at_utc": fetched_at_utc,
+        "current_snowpack": processed_resort.get("current_snowpack"),
         "bands": bands_summary,
     }
 
@@ -737,6 +709,7 @@ def process_resort_snapshot(
         "region": resort_snapshot["region"],
         "state": resort_snapshot["state"],
         "timezone": tz_name,
+        "current_snowpack": resort_snapshot.get("current_snowpack"),
         "bands": processed_bands,
     }
 

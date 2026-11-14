@@ -4,6 +4,7 @@ import { fetchResortDetail, fetchResorts, refreshForecasts } from "./api";
 import { DailyConsensusChart } from "./components/DailyConsensusChart";
 import { HourlyMeteogram } from "./components/HourlyMeteogram";
 import { ModelComparisonTable } from "./components/ModelComparisonTable";
+import { SnowpackPanel } from "./components/SnowpackPanel";
 import type { BandKey, ForecastRunMeta, ResortDetail, ResortSummary } from "./types";
 import { formatElevM } from "./utils/format";
 
@@ -182,6 +183,11 @@ export function App() {
             {/* Selected Resort Deep-Dive Workstation */}
             {detail && activeBand && (
               <section className="space-y-5">
+                <SnowpackPanel
+                  snowpack={detail.current_snowpack}
+                  timezone={detail.timezone}
+                />
+
                 {/* Daily 7-Day Consensus Bar + Spread Chart & Local Day Table */}
                 <DailyConsensusChart
                   daily={activeBand.daily}

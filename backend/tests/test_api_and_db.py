@@ -10,9 +10,10 @@ import unittest
 
 from fastapi.testclient import TestClient
 
+from app.engine.blending import process_snapshot
 from app.main import create_app
 from app.scripts.update import run_update_pipeline
-from app.storage.db import get_resort_detail, get_resort_summaries
+from app.storage.db import get_connection, get_resort_detail, get_resort_summaries, prune_old_runs, save_forecast_run
 
 
 def _make_resorts_config() -> dict:
@@ -104,7 +105,7 @@ class ApiAndDbTests(unittest.TestCase):
     def tearDown(self) -> None:
         self._tmp.cleanup()
 
-    def test_update_pipeline_db_history_and_run_deltas(self) -> None:
+    def test_update_pipeline_persists_latest_and_prunes_old_runs(self) -> None:
         now = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
         run1_snap = _make_snapshot(now - timedelta(hours=6), precip_mm_per_hour=1.0)
         run2_snap = _make_snapshot(now, precip_mm_per_hour=2.5)
@@ -133,8 +134,24 @@ class ApiAndDbTests(unittest.TestCase):
         latest_meta, summaries = get_resort_summaries(db_path=self.db_path)
         self.assertIsNotNone(latest_meta)
         self.assertEqual(len(summaries), 1)
-        self.assertIsNotNone(summaries[0]["run_delta"])
-        self.assertGreater(summaries[0]["run_delta"]["summit_72h_in"], 0.0)
+        self.assertNotIn("run_delta", summaries[0])
+
+        with get_connection(self.db_path) as conn:
+            tables = {
+                row["name"]
+                for row in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
+            }
+        self.assertNotIn("band_window_forecasts", tables)
+
+        # Verify bounded run retention prunes older runs cleanly
+        run3_processed = process_snapshot(_make_snapshot(now + timedelta(hours=6), precip_mm_per_hour=3.0))
+        save_forecast_run(run3_processed, db_path=self.db_path, keep_runs=2)
+        with get_connection(self.db_path) as conn:
+            run_ids = [r["id"] for r in conn.execute("SELECT id FROM forecast_runs ORDER BY id").fetchall()]
+            payload_runs = [r["run_id"] for r in conn.execute("SELECT DISTINCT run_id FROM resort_run_payloads ORDER BY run_id").fetchall()]
+        self.assertEqual(len(run_ids), 2)
+        self.assertEqual(payload_runs, run_ids)
+        self.assertEqual(prune_old_runs(keep_runs=1, db_path=self.db_path), 1)
 
         detail = get_resort_detail("kirkwood", db_path=self.db_path)
         self.assertIsNotNone(detail)

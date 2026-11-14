@@ -118,9 +118,9 @@ export function getSlrQuality(avgSlr: number): SlrQuality {
 export function slrBadgeClass(quality: SlrQuality): string {
   switch (quality) {
     case "wet":
-      return "bg-rose-500/15 text-rose-300 border-rose-500/30";
-    case "normal":
       return "bg-amber-500/15 text-amber-300 border-amber-500/30";
+    case "normal":
+      return "";
     case "powder":
       return "bg-sky-500/15 text-sky-300 border-sky-500/30";
   }

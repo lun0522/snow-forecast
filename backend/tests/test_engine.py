@@ -5,7 +5,12 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 import unittest
 
-from app.engine.blending import process_snapshot
+from app.engine.blending import (
+    HORIZON_HOURS,
+    _normalize_met_no,
+    parse_utc,
+    process_snapshot,
+)
 from app.engine.physics import (
     apply_snowpack_settling,
     classify_snow_fraction,
@@ -179,7 +184,8 @@ class BlendingTests(unittest.TestCase):
         }
 
     def test_partial_horizon_exclusion_and_interval_alignment(self) -> None:
-        processed = process_snapshot(self._build_synthetic_snapshot())
+        snap = self._build_synthetic_snapshot()
+        processed = process_snapshot(snap)
         summit = processed["resorts"][0]["bands"]["summit"]
 
         # HRRR (44h) must contribute to 24h consensus, but NOT 72h/168h consensus!
@@ -190,7 +196,13 @@ class BlendingTests(unittest.TestCase):
         self.assertIn("met_no", summit["windows"]["168h"]["models_used"])
 
         # MET Norway 6h block (hours 24..29) splits 6.0mm evenly -> ~0.0394 in/hr
-        met_hourly = summit["models"]["met_no"]["hourly"]
+        self.assertNotIn("hourly", summit["models"]["met_no"])
+        met_hourly = _normalize_met_no(
+            snap["resorts"][0]["bands"]["summit"]["met_no"],
+            parse_utc(processed["anchor_utc"]),
+            HORIZON_HOURS,
+            summit["elevation_m"],
+        )
         for idx in range(24, 30):
             self.assertAlmostEqual(met_hourly[idx]["precip_in"], 1.0 / 25.4, places=2)
             self.assertGreater(met_hourly[idx]["physics_snow_in"], 0.4)

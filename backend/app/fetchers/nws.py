@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from typing import Any
 
-from app.geo import c_to_f, kph_to_mph, meters_to_feet, mm_to_inches
 from app.http_client import get_json
+from app.time_utils import parse_utc
 
 NWS_POINTS_URL = "https://api.weather.gov/points"
 _ISO_DURATION_RE = re.compile(
@@ -31,7 +31,7 @@ def parse_iso_duration(duration_str: str) -> timedelta:
 def parse_valid_time(valid_time: str) -> tuple[datetime, datetime]:
     """Split NWS 'start/duration' validTime into aware UTC (start, end) datetimes."""
     start_str, dur_str = valid_time.split("/", 1)
-    start_dt = datetime.fromisoformat(start_str.replace("Z", "+00:00")).astimezone(timezone.utc)
+    start_dt = parse_utc(start_str)
     duration = parse_iso_duration(dur_str)
     return start_dt, start_dt + duration
 
@@ -90,45 +90,12 @@ def _parse_layer(props: dict[str, Any], key: str, converter) -> list[dict[str, A
         start_dt, end_dt = parse_valid_time(vt)
         entries.append(
             {
-                "start": start_dt,
-                "end": end_dt,
                 "start_utc": start_dt.isoformat(),
                 "end_utc": end_dt.isoformat(),
                 "value": round(converter(float(val), uom), 3),
             }
         )
     return entries
-
-
-def _sum_overlapping(entries: list[dict[str, Any]], win_start: datetime, win_end: datetime) -> float:
-    """Proportionally sum interval-accumulated quantities overlapping [win_start, win_end)."""
-    total = 0.0
-    for entry in entries:
-        e_start, e_end = entry["start"], entry["end"]
-        duration_sec = (e_end - e_start).total_seconds()
-        if duration_sec <= 0:
-            continue
-        overlap_start = max(e_start, win_start)
-        overlap_end = min(e_end, win_end)
-        if overlap_end > overlap_start:
-            frac = (overlap_end - overlap_start).total_seconds() / duration_sec
-            total += entry["value"] * frac
-    return total
-
-
-def _values_in_window(entries: list[dict[str, Any]], win_start: datetime, win_end: datetime) -> list[float]:
-    return [
-        e["value"]
-        for e in entries
-        if e["end"] > win_start and e["start"] < win_end
-    ]
-
-
-def _serialize_entries(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    return [
-        {"start_utc": e["start_utc"], "end_utc": e["end_utc"], "value": e["value"]}
-        for e in entries
-    ]
 
 
 def discover_gridpoint(lat: float, lon: float) -> dict[str, Any]:
@@ -148,70 +115,20 @@ def discover_gridpoint(lat: float, lon: float) -> dict[str, Any]:
     }
 
 
-def parse_grid_forecast_response(
-    payload: dict[str, Any],
-    reference_time: datetime | None = None,
-) -> dict[str, Any]:
-    """Normalize NWS forecastGridData payload into metric/imperial series & window totals."""
+def parse_grid_forecast_response(payload: dict[str, Any]) -> dict[str, Any]:
+    """Normalize NWS forecastGridData payload into metric interval layers."""
     props = payload.get("properties") or {}
-    update_time_raw = props.get("updateTime")
-    ref = reference_time or datetime.now(timezone.utc)
-    if reference_time is None and update_time_raw:
-        ref = datetime.fromisoformat(update_time_raw.replace("Z", "+00:00")).astimezone(timezone.utc)
-
-    qpf = _parse_layer(props, "quantitativePrecipitation", _to_mm)
-    snow = _parse_layer(props, "snowfallAmount", _to_mm)
-    snow_level = _parse_layer(props, "snowLevel", _to_meters)
-    temp = _parse_layer(props, "temperature", _to_celsius)
-    wind = _parse_layer(props, "windSpeed", _to_kph)
-    gust = _parse_layer(props, "windGust", _to_kph)
-    pop = _parse_layer(props, "probabilityOfPrecipitation", lambda v, _: v)
-
-    elevation_info = props.get("elevation") or {}
-    grid_elev_m = (
-        _to_meters(float(elevation_info["value"]), elevation_info.get("unitCode"))
-        if elevation_info.get("value") is not None
-        else None
-    )
-
-    windows: dict[str, dict[str, Any]] = {}
-    for hours in (24, 48, 72, 168):
-        win_end = ref + timedelta(hours=hours)
-        snow_mm = _sum_overlapping(snow, ref, win_end)
-        qpf_mm = _sum_overlapping(qpf, ref, win_end)
-        t_vals = _values_in_window(temp, ref, win_end)
-        sl_vals = _values_in_window(snow_level, ref, win_end)
-        w_vals = _values_in_window(wind, ref, win_end)
-        g_vals = _values_in_window(gust, ref, win_end)
-
-        windows[f"{hours}h"] = {
-            "snowfall_in": round(mm_to_inches(snow_mm), 2),
-            "snowfall_mm": round(snow_mm, 1),
-            "precip_in": round(mm_to_inches(qpf_mm), 2),
-            "precip_mm": round(qpf_mm, 1),
-            "temp_min_f": round(c_to_f(min(t_vals)), 1) if t_vals else None,
-            "temp_max_f": round(c_to_f(max(t_vals)), 1) if t_vals else None,
-            "snow_level_min_ft": round(meters_to_feet(min(sl_vals))) if sl_vals else None,
-            "snow_level_max_ft": round(meters_to_feet(max(sl_vals))) if sl_vals else None,
-            "max_wind_mph": round(kph_to_mph(max(w_vals)), 1) if w_vals else None,
-            "max_gust_mph": round(kph_to_mph(max(g_vals)), 1) if g_vals else None,
-        }
-
     return {
         "source": "nws-gridpoints",
         "grid_id": props.get("gridId"),
-        "update_time": update_time_raw,
-        "grid_elevation_m": round(grid_elev_m, 1) if grid_elev_m is not None else None,
-        "grid_elevation_ft": round(meters_to_feet(grid_elev_m)) if grid_elev_m is not None else None,
-        "windows": windows,
+        "update_time": props.get("updateTime"),
         "layers": {
-            "quantitative_precipitation_mm": _serialize_entries(qpf),
-            "snowfall_amount_mm": _serialize_entries(snow),
-            "snow_level_m": _serialize_entries(snow_level),
-            "temperature_c": _serialize_entries(temp),
-            "wind_speed_kph": _serialize_entries(wind),
-            "wind_gust_kph": _serialize_entries(gust),
-            "probability_of_precipitation_pct": _serialize_entries(pop),
+            "quantitative_precipitation_mm": _parse_layer(props, "quantitativePrecipitation", _to_mm),
+            "snowfall_amount_mm": _parse_layer(props, "snowfallAmount", _to_mm),
+            "snow_level_m": _parse_layer(props, "snowLevel", _to_meters),
+            "temperature_c": _parse_layer(props, "temperature", _to_celsius),
+            "wind_speed_kph": _parse_layer(props, "windSpeed", _to_kph),
+            "wind_gust_kph": _parse_layer(props, "windGust", _to_kph),
         },
     }
 

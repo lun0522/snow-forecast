@@ -52,7 +52,7 @@ python3 -m venv .venv
 ### API Endpoints
 - `GET /api/health` — API & latest SQLite forecast run status
 - `GET /api/runs` — Recent forecast runs stored in SQLite
-- `GET /api/resorts` — Overview summaries for all configured resorts (24h/48h/72h/5d/7d Base/Mid/Summit consensus, snow level, confidence, run-to-run deltas)
+- `GET /api/resorts` — Overview summaries for all configured resorts (24h/48h/72h/5d/7d Base/Mid/Summit consensus, snow level, confidence, nearby snowpack telemetry)
 - `GET /api/resorts/{resort_id}` — Detailed 168h consensus timeline, individual model breakdowns, and local-timezone daily rollups
 - `POST /api/refresh` — Trigger a live multi-source fetch, physics/consensus run, and SQLite save
 

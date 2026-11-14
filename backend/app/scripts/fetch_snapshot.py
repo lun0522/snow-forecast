@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -11,6 +12,7 @@ from typing import Any
 from app.fetchers.met_no import fetch_met_no_forecast
 from app.fetchers.nws import fetch_grid_forecast
 from app.fetchers.open_meteo import DEFAULT_MODELS, fetch_multi_model_forecast
+from app.fetchers.snowpack import fetch_current_snowpack_for_resorts
 from app.http_client import HttpFetchError
 
 DEFAULT_RESORTS_PATH = Path(__file__).resolve().parent.parent / "resorts.json"
@@ -27,79 +29,120 @@ def load_resorts(path: Path = DEFAULT_RESORTS_PATH) -> list[dict[str, Any]]:
     return doc["resorts"]
 
 
+def _fetch_all_open_meteo(
+    band_items: list[tuple[str, str, dict[str, Any]]],
+    models: tuple[str, ...],
+) -> dict[tuple[str, str], dict[str, Any]]:
+    """Fetch Open-Meteo sequentially with a circuit breaker to avoid 429 burst limits."""
+    results: dict[tuple[str, str], dict[str, Any]] = {}
+    unreachable_error: str | None = None
+
+    for resort_id, band_key, band in band_items:
+        if unreachable_error is not None:
+            results[(resort_id, band_key)] = {"status": "unavailable", "error": unreachable_error}
+            continue
+        try:
+            om_data = fetch_multi_model_forecast(
+                lat=band["lat"],
+                lon=band["lon"],
+                elevation_m=band["reported_elevation_m"],
+                models=models,
+                forecast_days=10,
+                timeout=6.0,
+                retries=1,
+            )
+            om_data["status"] = "ok"
+            results[(resort_id, band_key)] = om_data
+        except HttpFetchError as exc:
+            unreachable_error = str(exc)
+            print(f"[warn] Open-Meteo unreachable ({exc}); skipping Open-Meteo for remaining bands.")
+            results[(resort_id, band_key)] = {"status": "unavailable", "error": unreachable_error}
+
+    return results
+
+
+def _fetch_met_no_band(band: dict[str, Any]) -> dict[str, Any]:
+    """Fetch MET Norway Locationforecast 2.0 for a single elevation band."""
+    try:
+        met_data = fetch_met_no_forecast(
+            lat=band["lat"],
+            lon=band["lon"],
+            elevation_m=band["reported_elevation_m"],
+        )
+        met_data["status"] = "ok"
+        return met_data
+    except HttpFetchError as exc:
+        return {"status": "unavailable", "error": str(exc)}
+
+
+def _fetch_nws_band(band: dict[str, Any]) -> dict[str, Any] | None:
+    """Fetch NWS gridpoint forecast for a US elevation band, or None outside NWS coverage."""
+    nws_url = (band.get("nws") or {}).get("forecast_grid_data_url")
+    if not nws_url:
+        return None
+    try:
+        nws_data = fetch_grid_forecast(nws_url)
+        nws_data["status"] = "ok"
+        return nws_data
+    except HttpFetchError as exc:
+        return {"status": "unavailable", "error": str(exc)}
+
+
 def fetch_all_data(
     resorts: list[dict[str, Any]],
     bands: tuple[str, ...] = ("base", "mid", "summit"),
     models: tuple[str, ...] = DEFAULT_MODELS,
 ) -> dict[str, Any]:
-    """Fetch forecasts (Open-Meteo, MET Norway, NWS)."""
-    open_meteo_unreachable_error: str | None = None
-    resort_snapshots: list[dict[str, Any]] = []
+    """Fetch forecasts (Open-Meteo, MET Norway, NWS) and nearby natural snowpack telemetry."""
+    band_items = [
+        (resort["id"], band_key, resort["bands"][band_key])
+        for resort in resorts
+        for band_key in bands
+    ]
 
+    with ThreadPoolExecutor(max_workers=10) as pool:
+        snowpack_future = pool.submit(fetch_current_snowpack_for_resorts, resorts)
+        om_future = pool.submit(_fetch_all_open_meteo, band_items, models)
+        met_futures = {
+            (resort_id, band_key): pool.submit(_fetch_met_no_band, band)
+            for resort_id, band_key, band in band_items
+        }
+        nws_futures = {
+            (resort_id, band_key): pool.submit(_fetch_nws_band, band)
+            for resort_id, band_key, band in band_items
+        }
+
+        snowpack_by_resort = snowpack_future.result()
+        om_results = om_future.result()
+        met_results = {key: fut.result() for key, fut in met_futures.items()}
+        nws_results = {key: fut.result() for key, fut in nws_futures.items()}
+
+    resort_snapshots: list[dict[str, Any]] = []
     for resort in resorts:
+        resort_id = resort["id"]
         band_forecasts: dict[str, Any] = {}
         for band_key in bands:
             band = resort["bands"][band_key]
-
-            # 1. Open-Meteo multi-model (skip remaining calls in this run if host times out)
-            if open_meteo_unreachable_error is not None:
-                om_data: dict[str, Any] = {"status": "unavailable", "error": open_meteo_unreachable_error}
-            else:
-                try:
-                    om_data = fetch_multi_model_forecast(
-                        lat=band["lat"],
-                        lon=band["lon"],
-                        elevation_m=band["reported_elevation_m"],
-                        models=models,
-                        forecast_days=10,
-                        timeout=6.0,
-                        retries=1,
-                    )
-                    om_data["status"] = "ok"
-                except HttpFetchError as exc:
-                    open_meteo_unreachable_error = str(exc)
-                    print(f"[warn] Open-Meteo unreachable ({exc}); skipping Open-Meteo for remaining bands.")
-                    om_data = {"status": "unavailable", "error": open_meteo_unreachable_error}
-
-            # 2. MET Norway Locationforecast 2.0 (ECMWF-backed, altitude-adjusted)
-            try:
-                met_data: dict[str, Any] = fetch_met_no_forecast(
-                    lat=band["lat"],
-                    lon=band["lon"],
-                    elevation_m=band["reported_elevation_m"],
-                )
-                met_data["status"] = "ok"
-            except HttpFetchError as exc:
-                met_data = {"status": "unavailable", "error": str(exc)}
-
-            # 3. NWS 2.5km Gridpoints (NDFD / NBM + forecaster snowLevel)
-            nws_data = None
-            nws_url = (band.get("nws") or {}).get("forecast_grid_data_url")
-            if nws_url:
-                try:
-                    nws_data = fetch_grid_forecast(nws_url)
-                    nws_data["status"] = "ok"
-                except HttpFetchError as exc:
-                    nws_data = {"status": "unavailable", "error": str(exc)}
-
+            key = (resort_id, band_key)
             band_forecasts[band_key] = {
                 "label": band["label"],
                 "elevation_ft": band["reported_elevation_ft"],
                 "elevation_m": band["reported_elevation_m"],
                 "lat": band["lat"],
                 "lon": band["lon"],
-                "open_meteo": om_data,
-                "met_no": met_data,
-                "nws": nws_data,
+                "open_meteo": om_results[key],
+                "met_no": met_results[key],
+                "nws": nws_results[key],
             }
 
         resort_snapshots.append(
             {
-                "id": resort["id"],
+                "id": resort_id,
                 "name": resort["name"],
                 "region": resort["region"],
                 "state": resort["state"],
                 "timezone": resort.get("timezone"),
+                "current_snowpack": snowpack_by_resort.get(resort_id),
                 "bands": band_forecasts,
             }
         )
@@ -111,84 +154,37 @@ def fetch_all_data(
     }
 
 
-def _fmt(val: float | int | None, suffix: str = "") -> str:
-    if val is None:
-        return "-"
-    return f"{val}{suffix}"
-
-
-def _fmt_temp_range(win: dict[str, Any]) -> str:
-    if win.get("temp_min_f") is None:
-        return "-"
-    return f"{win['temp_min_f']}/{win['temp_max_f']}°F"
-
-
 def print_snapshot_report(snapshot: dict[str, Any]) -> None:
-    """Print a compact multi-model forecast comparison in the terminal."""
+    """Print a compact raw-source ingestion summary in the terminal."""
     print(f"\nSnapshot fetched at {snapshot['fetched_at_utc']}")
-    print("=" * 96)
+    print("=" * 84)
 
     for resort in snapshot["resorts"]:
-        print(f"\n{resort['name']} ({resort['region']}, {resort['state']})")
-        print("-" * 96)
+        sp = resort.get("current_snowpack") or {}
+        sp_summary = (
+            f"{len(sp.get('stations') or [])} stations ({sp.get('network', 'n/a')})"
+            if sp.get("status") == "ok"
+            else sp.get("status", "n/a")
+        )
+        print(f"\n{resort['name']} ({resort['region']}, {resort['state']}) | Snowpack: {sp_summary}")
 
         for band_key in ("base", "mid", "summit"):
             if band_key not in resort["bands"]:
                 continue
             band = resort["bands"][band_key]
-            print(f"\n  [{band_key.upper()} - {band['elevation_ft']} ft]")
-            print(
-                f"  {'Source / Model':<20} {'Horizon':>7} {'24h Snow':>10} {'72h Snow':>10} "
-                f"{'7d Snow':>10} {'72h QPF':>9} {'72h Temp':>14}"
-            )
-
             om = band.get("open_meteo") or {}
-            if om.get("status") == "ok":
-                for model_name, mdata in om["models"].items():
-                    summary = mdata["summary"]
-                    win = summary["windows"]
-                    h24, h72, h168 = win.get("24h", {}), win.get("72h", {}), win.get("168h", {})
-                    print(
-                        f"  {model_name:<20} "
-                        f"{summary['max_horizon_hours']:>5}h  "
-                        f"{_fmt(h24.get('snowfall_in'), '\"'):>10} "
-                        f"{_fmt(h72.get('snowfall_in'), '\"'):>10} "
-                        f"{_fmt(h168.get('snowfall_in'), '\"'):>10} "
-                        f"{_fmt(h72.get('precip_in'), '\"'):>9} "
-                        f"{_fmt_temp_range(h72):>14}"
-                    )
-            else:
-                print(f"  {'open-meteo':<20} {'down':>7}  (unavailable on this network)")
+            om_desc = f"ok ({len(om.get('models') or {})} models)" if om.get("status") == "ok" else om.get("status", "n/a")
 
             met = band.get("met_no") or {}
-            if met.get("status") == "ok":
-                m_win = met["windows"]
-                h24, h72, h168 = m_win.get("24h", {}), m_win.get("72h", {}), m_win.get("168h", {})
-                print(
-                    f"  {'met_no (ECMWF+alt)':<20} "
-                    f"{met['max_horizon_hours']:>5}h  "
-                    f"{_fmt(h24.get('est_snow_in'), '\"'):>10} "
-                    f"{_fmt(h72.get('est_snow_in'), '\"'):>10} "
-                    f"{_fmt(h168.get('est_snow_in'), '\"'):>10} "
-                    f"{_fmt(h72.get('precip_in'), '\"'):>9} "
-                    f"{_fmt_temp_range(h72):>14}"
-                )
+            met_desc = f"ok ({len(met.get('intervals') or [])} intervals)" if met.get("status") == "ok" else met.get("status", "n/a")
 
             nws = band.get("nws") or {}
-            if nws.get("status") == "ok":
-                nw_win = nws["windows"]
-                h24, h72, h168 = nw_win.get("24h", {}), nw_win.get("72h", {}), nw_win.get("168h", {})
-                sl_info = ""
-                if h72.get("snow_level_min_ft") is not None:
-                    sl_info = f" (SnowLvl {h72['snow_level_min_ft']}-{h72['snow_level_max_ft']} ft)"
-                print(
-                    f"  {'nws_gridpoints':<20} {'~168h':>7} "
-                    f"{_fmt(h24.get('snowfall_in'), '\"'):>10} "
-                    f"{_fmt(h72.get('snowfall_in'), '\"'):>10} "
-                    f"{_fmt(h168.get('snowfall_in'), '\"'):>10} "
-                    f"{_fmt(h72.get('precip_in'), '\"'):>9} "
-                    f"{_fmt_temp_range(h72):>14}{sl_info}"
-                )
+            nws_desc = f"ok ({nws.get('grid_id') or 'n/a'})" if nws.get("status") == "ok" else ("n/a" if not band.get("nws") else nws.get("status", "n/a"))
+
+            print(
+                f"  [{band_key.upper():<6} {band['elevation_ft']:>5}ft] "
+                f"open-meteo={om_desc:<16} met-no={met_desc:<20} nws={nws_desc}"
+            )
 
 
 def main() -> None:

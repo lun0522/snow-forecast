@@ -2,17 +2,14 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 from typing import Any
 
-from app.geo import c_to_f, cm_to_inches, mm_to_inches
+from app.geo import cm_to_inches
 from app.http_client import get_json
+from app.time_utils import parse_utc
 
 MET_NO_COMPLETE_URL = "https://api.met.no/weatherapi/locationforecast/2.0/complete"
-
-
-def _parse_utc(ts: str) -> datetime:
-    return datetime.fromisoformat(ts.replace("Z", "+00:00")).astimezone(timezone.utc)
 
 
 def _mps_to_mph(mps: float) -> float:
@@ -51,11 +48,8 @@ def _preliminary_slr(temp_c: float | None) -> float:
     return 6.0
 
 
-def parse_met_no_response(
-    payload: dict[str, Any],
-    reference_time: datetime | None = None,
-) -> dict[str, Any]:
-    """Normalize MET Norway Locationforecast 2.0 JSON into intervals and window summaries."""
+def parse_met_no_response(payload: dict[str, Any]) -> dict[str, Any]:
+    """Normalize MET Norway Locationforecast 2.0 JSON into non-overlapping intervals."""
     props = payload.get("properties") or {}
     meta = props.get("meta") or {}
     timeseries = props.get("timeseries") or []
@@ -67,13 +61,10 @@ def parse_met_no_response(
             "source": "met-no",
             "updated_at": meta.get("updated_at"),
             "altitude_m": altitude_m,
-            "windows": {},
             "intervals": [],
         }
 
-    times = [_parse_utc(item["time"]) for item in timeseries]
-    ref = reference_time or times[0]
-
+    times = [parse_utc(item["time"]) for item in timeseries]
     intervals: list[dict[str, Any]] = []
     for idx, item in enumerate(timeseries):
         t_start = times[idx]
@@ -118,89 +109,27 @@ def parse_met_no_response(
         snow_frac = _estimate_snow_fraction(symbol_code, temp_c)
         snow_qpf_mm = float(precip_mm) * snow_frac if precip_mm is not None else 0.0
         # 1 mm liquid * (SLR/10) cm = snow_cm (since 1 mm water at 10:1 -> 1 cm snow)
-        slr = _preliminary_slr(temp_c)
-        est_snow_cm = snow_qpf_mm * (slr / 10.0)
+        est_snow_cm = snow_qpf_mm * (_preliminary_slr(temp_c) / 10.0)
 
         t_end = t_start + timedelta(hours=block_hours) if block_hours > 0 else t_start
         intervals.append(
             {
-                "start": t_start,
-                "end": t_end,
                 "start_utc": t_start.isoformat(),
                 "end_utc": t_end.isoformat(),
-                "step_hours": block_hours,
                 "temp_c": temp_c,
-                "temp_f": round(c_to_f(float(temp_c)), 1) if temp_c is not None else None,
                 "rh_pct": instant.get("relative_humidity"),
-                "cloud_pct": instant.get("cloud_area_fraction"),
                 "wind_mph": round(_mps_to_mph(float(wind_mps)), 1) if wind_mps is not None else None,
                 "wind_gust_mph": round(_mps_to_mph(float(gust_mps)), 1) if gust_mps is not None else None,
-                "wind_dir_deg": instant.get("wind_from_direction"),
                 "precip_mm": round(float(precip_mm), 2) if precip_mm is not None else None,
-                "est_snow_cm": round(est_snow_cm, 2) if precip_mm is not None else None,
                 "est_snow_in": round(cm_to_inches(est_snow_cm), 2) if precip_mm is not None else None,
-                "pop_pct": details.get("probability_of_precipitation"),
-                "symbol_code": symbol_code,
             }
         )
-
-    last_end = max(iv["end"] for iv in intervals)
-    max_horizon_hours = max(0, int(round((last_end - ref).total_seconds() / 3600.0)))
-
-    windows: dict[str, dict[str, Any]] = {}
-    for hours in (24, 48, 72, 168):
-        win_end = ref + timedelta(hours=hours)
-        precip_mm_sum = 0.0
-        snow_cm_sum = 0.0
-        temps: list[float] = []
-        winds: list[float] = []
-        gusts: list[float] = []
-
-        for iv in intervals:
-            if iv["end"] <= ref or iv["start"] >= win_end:
-                continue
-            if iv["temp_f"] is not None:
-                temps.append(iv["temp_f"])
-            if iv["wind_mph"] is not None:
-                winds.append(iv["wind_mph"])
-            if iv["wind_gust_mph"] is not None:
-                gusts.append(iv["wind_gust_mph"])
-
-            dur_s = (iv["end"] - iv["start"]).total_seconds()
-            if dur_s > 0:
-                ov_s = (min(iv["end"], win_end) - max(iv["start"], ref)).total_seconds()
-                frac = max(0.0, ov_s / dur_s)
-                if iv["precip_mm"] is not None:
-                    precip_mm_sum += iv["precip_mm"] * frac
-                if iv["est_snow_cm"] is not None:
-                    snow_cm_sum += iv["est_snow_cm"] * frac
-
-        if max_horizon_hours < int(hours * 0.75):
-            continue
-
-        windows[f"{hours}h"] = {
-            "precip_mm": round(precip_mm_sum, 2),
-            "precip_in": round(mm_to_inches(precip_mm_sum), 2),
-            "est_snow_cm": round(snow_cm_sum, 2),
-            "est_snow_in": round(cm_to_inches(snow_cm_sum), 2),
-            "temp_min_f": min(temps) if temps else None,
-            "temp_max_f": max(temps) if temps else None,
-            "max_wind_mph": max(winds) if winds else None,
-            "max_gust_mph": max(gusts) if gusts else None,
-        }
-
-    serializable_intervals = [
-        {k: v for k, v in iv.items() if k not in ("start", "end")}
-        for iv in intervals
-    ]
 
     return {
         "source": "met-no",
         "updated_at": meta.get("updated_at"),
         "altitude_m": altitude_m,
-        "max_horizon_hours": max_horizon_hours,
-        "windows": windows,
-        "intervals": serializable_intervals,
+        "intervals": intervals,
     }
 
 

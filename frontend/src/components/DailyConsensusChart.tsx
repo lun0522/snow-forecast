@@ -216,6 +216,7 @@ export function DailyConsensusChart({
           <tbody className="divide-y divide-slate-800/60 tabular-nums">
             {daily.map((day, idx) => {
               const slrQuality = getSlrQuality(day.avg_slr);
+              const slrBadge = slrBadgeClass(slrQuality);
               const tempBadge = riskBadgeClass(day.rain_snow_risk);
               const windRisk = getWindRiskLevel(day.max_wind_mph, day.max_gust_mph);
               const windBadge = windRiskBadgeClass(windRisk);
@@ -246,7 +247,7 @@ export function DailyConsensusChart({
                   <td className="py-2 px-3">
                     <span
                       title={slrTitle(slrQuality)}
-                      className={`${BADGE_PILL_BASE} ${slrBadgeClass(slrQuality)}`}
+                      className={slrBadge ? `${BADGE_PILL_BASE} ${slrBadge}` : "whitespace-nowrap"}
                     >
                       {day.avg_slr.toFixed(1)}:1
                     </span>
@@ -283,10 +284,7 @@ export function DailyConsensusChart({
         <div className="flex flex-wrap items-center gap-3">
           <span>SLR:</span>
           <span className="inline-flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-xs bg-rose-400/80" /> Wet (&lt;10:1)
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-xs bg-amber-400/80" /> Normal (10–14.9:1)
+            <span className="inline-block h-2 w-2 rounded-xs bg-amber-400/80" /> Wet (&lt;10:1)
           </span>
           <span className="inline-flex items-center gap-1">
             <span className="inline-block h-2 w-2 rounded-xs bg-sky-400/80" /> Powder (≥15:1)

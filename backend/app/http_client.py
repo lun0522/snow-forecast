@@ -30,15 +30,16 @@ class HttpFetchError(RuntimeError):
     """Raised when an upstream HTTP API request fails after retries."""
 
 
-def get_json(
+def get_text(
     url: str,
     params: dict[str, Any] | None = None,
     headers: dict[str, str] | None = None,
     timeout: float = 25.0,
     retries: int = 3,
     backoff_seconds: float = 1.0,
-) -> Any:
-    """Fetch JSON from an HTTP(S) endpoint with retry on transient errors."""
+    accept: str = "*/*",
+) -> str:
+    """Fetch UTF-8 text from an HTTP(S) endpoint with retry on transient errors."""
     full_url = url
     if params:
         encoded = urllib.parse.urlencode(params, doseq=True)
@@ -47,7 +48,7 @@ def get_json(
 
     req_headers = {
         "User-Agent": DEFAULT_USER_AGENT,
-        "Accept": "application/json, application/geo+json",
+        "Accept": accept,
     }
     if headers:
         req_headers.update(headers)
@@ -57,8 +58,7 @@ def get_json(
         request = urllib.request.Request(full_url, headers=req_headers)
         try:
             with urllib.request.urlopen(request, timeout=timeout, context=_SSL_CONTEXT) as resp:
-                raw = resp.read().decode("utf-8")
-                return json.loads(raw)
+                return resp.read().decode("utf-8", errors="replace")
         except urllib.error.HTTPError as exc:
             last_error = exc
             if exc.code in (429, 500, 502, 503, 504) and attempt < retries - 1:
@@ -70,7 +70,7 @@ def get_json(
             except Exception:
                 pass
             raise HttpFetchError(f"HTTP {exc.code} fetching {full_url}: {body_preview}") from exc
-        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+        except (urllib.error.URLError, TimeoutError) as exc:
             last_error = exc
             if attempt < retries - 1:
                 time.sleep(backoff_seconds * (2**attempt))
@@ -78,3 +78,27 @@ def get_json(
             raise HttpFetchError(f"Error fetching {full_url}: {exc}") from exc
 
     raise HttpFetchError(f"Failed fetching {full_url}: {last_error}")
+
+
+def get_json(
+    url: str,
+    params: dict[str, Any] | None = None,
+    headers: dict[str, str] | None = None,
+    timeout: float = 25.0,
+    retries: int = 3,
+    backoff_seconds: float = 1.0,
+) -> Any:
+    """Fetch JSON from an HTTP(S) endpoint with retry on transient errors."""
+    raw = get_text(
+        url=url,
+        params=params,
+        headers=headers,
+        timeout=timeout,
+        retries=retries,
+        backoff_seconds=backoff_seconds,
+        accept="application/json, application/geo+json",
+    )
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise HttpFetchError(f"Invalid JSON from {url}: {exc}") from exc

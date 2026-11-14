@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
 from typing import Any
 
-from app.geo import c_to_f, cm_to_inches, kph_to_mph, meters_to_feet, mm_to_inches
+from app.geo import cm_to_inches, kph_to_mph
 from app.http_client import get_json
 
 OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
@@ -24,17 +23,11 @@ HOURLY_VARIABLES: tuple[str, ...] = (
     "temperature_2m",
     "relative_humidity_2m",
     "precipitation",
-    "rain",
     "snowfall",
-    "snow_depth",
     "freezing_level_height",
     "wind_speed_10m",
     "wind_gusts_10m",
-    "wind_direction_10m",
-    "weather_code",
 )
-
-SUMMARY_WINDOWS_HOURS: tuple[int, ...] = (24, 48, 72, 168, 240)
 
 
 def fetch_dem_elevations(
@@ -67,129 +60,40 @@ def _extract_series(hourly: dict[str, Any], var: str, model: str, total_len: int
     return [None] * total_len
 
 
-def _parse_utc_hour(ts: str) -> datetime:
-    """Parse Open-Meteo ISO timestamp (UTC) into an aware datetime."""
-    if ts.endswith("Z"):
-        return datetime.fromisoformat(ts.replace("Z", "+00:00"))
-    dt = datetime.fromisoformat(ts)
-    if dt.tzinfo is None:
-        return dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc)
-
-
-def _summarize_model_hours(rows: list[dict[str, Any]], reference_time: datetime) -> dict[str, Any]:
-    """Compute horizon coverage and snowfall/precip/temp/wind summaries for standard windows."""
-    valid_rows = [
-        r
-        for r in rows
-        if r["snowfall_cm"] is not None or r["precip_mm"] is not None or r["temp_c"] is not None
-    ]
-    if not valid_rows:
-        return {"max_horizon_hours": 0, "windows": {}}
-
-    last_dt = max(_parse_utc_hour(r["time_utc"]) for r in valid_rows)
-    max_horizon_hours = max(0, int(round((last_dt - reference_time).total_seconds() / 3600.0)) + 1)
-
-    windows: dict[str, dict[str, Any]] = {}
-    for hours in SUMMARY_WINDOWS_HOURS:
-        cutoff = reference_time + timedelta(hours=hours)
-        slice_rows = [
-            r
-            for r in valid_rows
-            if reference_time <= _parse_utc_hour(r["time_utc"]) < cutoff
-        ]
-        snow_vals = [r["snowfall_cm"] for r in slice_rows if r["snowfall_cm"] is not None]
-        precip_vals = [r["precip_mm"] for r in slice_rows if r["precip_mm"] is not None]
-        temp_vals = [r["temp_c"] for r in slice_rows if r["temp_c"] is not None]
-        wind_vals = [r["wind_kph"] for r in slice_rows if r["wind_kph"] is not None]
-        gust_vals = [r["wind_gust_kph"] for r in slice_rows if r["wind_gust_kph"] is not None]
-        fl_vals = [r["freezing_level_m"] for r in slice_rows if r["freezing_level_m"] is not None]
-
-        # Only populate a window if the model covers at least 75% of it (avoid misleading 48h HRRR 7d totals).
-        if len(slice_rows) < int(hours * 0.75):
-            continue
-
-        snow_cm = sum(snow_vals) if snow_vals else 0.0
-        precip_mm = sum(precip_vals) if precip_vals else 0.0
-        windows[f"{hours}h"] = {
-            "hours_covered": len(slice_rows),
-            "snowfall_cm": round(snow_cm, 2),
-            "snowfall_in": round(cm_to_inches(snow_cm), 2),
-            "precip_mm": round(precip_mm, 2),
-            "precip_in": round(mm_to_inches(precip_mm), 2),
-            "temp_min_f": round(c_to_f(min(temp_vals)), 1) if temp_vals else None,
-            "temp_max_f": round(c_to_f(max(temp_vals)), 1) if temp_vals else None,
-            "max_wind_mph": round(kph_to_mph(max(wind_vals)), 1) if wind_vals else None,
-            "max_gust_mph": round(kph_to_mph(max(gust_vals)), 1) if gust_vals else None,
-            "freezing_level_min_ft": round(meters_to_feet(min(fl_vals))) if fl_vals else None,
-            "freezing_level_max_ft": round(meters_to_feet(max(fl_vals))) if fl_vals else None,
-        }
-
-    return {"max_horizon_hours": max_horizon_hours, "windows": windows}
-
-
 def parse_multi_model_response(
     payload: dict[str, Any],
     models: tuple[str, ...] | list[str],
-    reference_time: datetime | None = None,
 ) -> dict[str, Any]:
-    """Normalize an Open-Meteo multi-model forecast response into per-model series & summaries."""
+    """Normalize an Open-Meteo multi-model forecast response into per-model hourly series."""
     hourly = payload.get("hourly") or {}
     times: list[str] = hourly.get("time") or []
-    if reference_time is not None:
-        ref = reference_time
-    elif times:
-        now_hour = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
-        first_dt = _parse_utc_hour(times[0])
-        last_dt = _parse_utc_hour(times[-1])
-        ref = now_hour if first_dt <= now_hour <= last_dt else first_dt
-    else:
-        ref = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
 
     model_results: dict[str, Any] = {}
     for model in models:
         temp_s = _extract_series(hourly, "temperature_2m", model, len(times))
         rh_s = _extract_series(hourly, "relative_humidity_2m", model, len(times))
         precip_s = _extract_series(hourly, "precipitation", model, len(times))
-        rain_s = _extract_series(hourly, "rain", model, len(times))
         snow_s = _extract_series(hourly, "snowfall", model, len(times))
-        depth_s = _extract_series(hourly, "snow_depth", model, len(times))
         fl_s = _extract_series(hourly, "freezing_level_height", model, len(times))
         wind_s = _extract_series(hourly, "wind_speed_10m", model, len(times))
         gust_s = _extract_series(hourly, "wind_gusts_10m", model, len(times))
-        dir_s = _extract_series(hourly, "wind_direction_10m", model, len(times))
-        code_s = _extract_series(hourly, "weather_code", model, len(times))
 
-        rows: list[dict[str, Any]] = []
-        for idx, ts in enumerate(times):
-            rows.append(
-                {
-                    "time_utc": ts if ts.endswith("Z") else f"{ts}Z",
-                    "temp_c": temp_s[idx],
-                    "temp_f": round(c_to_f(temp_s[idx]), 1) if temp_s[idx] is not None else None,
-                    "rh_pct": rh_s[idx],
-                    "precip_mm": precip_s[idx],
-                    "precip_in": round(mm_to_inches(precip_s[idx]), 3) if precip_s[idx] is not None else None,
-                    "rain_mm": rain_s[idx],
-                    "snowfall_cm": snow_s[idx],
-                    "snowfall_in": round(cm_to_inches(snow_s[idx]), 2) if snow_s[idx] is not None else None,
-                    "snow_depth_m": depth_s[idx],
-                    "freezing_level_m": fl_s[idx],
-                    "freezing_level_ft": round(meters_to_feet(fl_s[idx])) if fl_s[idx] is not None else None,
-                    "wind_kph": wind_s[idx],
-                    "wind_mph": round(kph_to_mph(wind_s[idx]), 1) if wind_s[idx] is not None else None,
-                    "wind_gust_kph": gust_s[idx],
-                    "wind_gust_mph": round(kph_to_mph(gust_s[idx]), 1) if gust_s[idx] is not None else None,
-                    "wind_dir_deg": dir_s[idx],
-                    "weather_code": code_s[idx],
-                }
-            )
+        rows = [
+            {
+                "time_utc": ts if ts.endswith("Z") else f"{ts}Z",
+                "temp_c": temp_s[idx],
+                "rh_pct": rh_s[idx],
+                "precip_mm": precip_s[idx],
+                "snowfall_cm": snow_s[idx],
+                "snowfall_in": round(cm_to_inches(snow_s[idx]), 2) if snow_s[idx] is not None else None,
+                "freezing_level_m": fl_s[idx],
+                "wind_mph": round(kph_to_mph(wind_s[idx]), 1) if wind_s[idx] is not None else None,
+                "wind_gust_mph": round(kph_to_mph(gust_s[idx]), 1) if gust_s[idx] is not None else None,
+            }
+            for idx, ts in enumerate(times)
+        ]
 
-        summary = _summarize_model_hours(rows, ref)
-        model_results[model] = {
-            "summary": summary,
-            "hourly": rows,
-        }
+        model_results[model] = {"hourly": rows}
 
     return {
         "source": "open-meteo",

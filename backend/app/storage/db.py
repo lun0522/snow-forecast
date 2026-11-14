@@ -15,6 +15,7 @@ DEFAULT_DB_PATH = Path(
         str(Path(__file__).resolve().parents[2] / "data" / "snow.db"),
     )
 )
+DEFAULT_KEEP_RUNS = 10
 
 SCHEMA_SQL = """
 PRAGMA foreign_keys = ON;
@@ -28,29 +29,6 @@ CREATE TABLE IF NOT EXISTS forecast_runs (
     notes TEXT
 );
 
-CREATE TABLE IF NOT EXISTS band_window_forecasts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    run_id INTEGER NOT NULL REFERENCES forecast_runs(id) ON DELETE CASCADE,
-    resort_id TEXT NOT NULL,
-    band_key TEXT NOT NULL,
-    window_key TEXT NOT NULL,
-    snow_min_in REAL,
-    snow_median_in REAL,
-    snow_max_in REAL,
-    native_snow_median_in REAL,
-    precip_median_in REAL,
-    avg_slr REAL,
-    temp_min_f REAL,
-    temp_max_f REAL,
-    max_wind_mph REAL,
-    snow_level_min_ft INTEGER,
-    snow_level_max_ft INTEGER,
-    rain_snow_risk TEXT,
-    confidence TEXT,
-    model_count INTEGER,
-    UNIQUE(run_id, resort_id, band_key, window_key)
-);
-
 CREATE TABLE IF NOT EXISTS resort_run_payloads (
     run_id INTEGER NOT NULL REFERENCES forecast_runs(id) ON DELETE CASCADE,
     resort_id TEXT NOT NULL,
@@ -58,9 +36,6 @@ CREATE TABLE IF NOT EXISTS resort_run_payloads (
     detail_json TEXT NOT NULL,
     PRIMARY KEY (run_id, resort_id)
 );
-
-CREATE INDEX IF NOT EXISTS idx_bwf_lookup
-    ON band_window_forecasts (resort_id, band_key, window_key, run_id);
 """
 
 
@@ -75,9 +50,51 @@ def get_connection(db_path: Path = DEFAULT_DB_PATH) -> sqlite3.Connection:
 
 
 def init_db(db_path: Path = DEFAULT_DB_PATH) -> None:
-    """Create database tables and indexes idempotently."""
+    """Create database tables idempotently and drop legacy unused tables."""
     with get_connection(db_path) as conn:
         conn.executescript(SCHEMA_SQL)
+        conn.execute("DROP TABLE IF EXISTS band_window_forecasts")
+        conn.execute("DROP TABLE IF EXISTS station_observations")
+
+
+def vacuum_db(db_path: Path = DEFAULT_DB_PATH) -> None:
+    """Reclaim free SQLite pages after pruning old forecast runs."""
+    conn = sqlite3.connect(str(Path(db_path)), timeout=15.0, isolation_level=None)
+    try:
+        conn.execute("VACUUM")
+    finally:
+        conn.close()
+
+
+def _prune_runs_in_conn(conn: sqlite3.Connection, keep_runs: int) -> int:
+    cursor = conn.execute(
+        """
+        DELETE FROM forecast_runs
+        WHERE id NOT IN (
+            SELECT id FROM forecast_runs
+            ORDER BY fetched_at_utc DESC, id DESC
+            LIMIT ?
+        )
+        """,
+        (keep_runs,),
+    )
+    return int(cursor.rowcount or 0)
+
+
+def prune_old_runs(
+    keep_runs: int = DEFAULT_KEEP_RUNS,
+    vacuum: bool = True,
+    db_path: Path = DEFAULT_DB_PATH,
+) -> int:
+    """Delete forecast runs beyond the newest ``keep_runs`` entries and optionally VACUUM."""
+    if keep_runs < 1:
+        raise ValueError("keep_runs must be >= 1")
+    init_db(db_path)
+    with get_connection(db_path) as conn:
+        deleted = _prune_runs_in_conn(conn, keep_runs)
+    if deleted > 0 and vacuum:
+        vacuum_db(db_path)
+    return deleted
 
 
 def save_forecast_run(
@@ -85,14 +102,16 @@ def save_forecast_run(
     db_path: Path = DEFAULT_DB_PATH,
     status: str = "ok",
     notes: str | None = None,
+    keep_runs: int | None = DEFAULT_KEEP_RUNS,
 ) -> int:
-    """Persist a Step 3 processed run, band windows, and resort payloads."""
+    """Persist a Step 3 processed run and resort payloads, pruning older runs beyond ``keep_runs``."""
     init_db(db_path)
     fetched_at = processed["fetched_at_utc"]
     created_at = datetime.now(timezone.utc).isoformat()
     models_json = json.dumps(processed.get("models_requested") or [])
 
     summaries_by_id = {s["id"]: s for s in (processed.get("summaries") or [])}
+    deleted = 0
 
     with get_connection(db_path) as conn:
         existing = conn.execute(
@@ -111,57 +130,15 @@ def save_forecast_run(
         )
         run_id = int(cursor.lastrowid)
 
-        bwf_rows: list[tuple[Any, ...]] = []
-        payload_rows: list[tuple[Any, ...]] = []
-
-        for resort in processed.get("resorts") or []:
-            resort_id = resort["id"]
-            summary = summaries_by_id.get(resort_id) or {}
-            payload_rows.append(
-                (
-                    run_id,
-                    resort_id,
-                    json.dumps(summary),
-                    json.dumps(resort),
-                )
+        payload_rows = [
+            (
+                run_id,
+                resort["id"],
+                json.dumps(summaries_by_id.get(resort["id"]) or {}),
+                json.dumps(resort),
             )
-
-            for band_key, band_val in (resort.get("bands") or {}).items():
-                for win_key, win_val in (band_val.get("windows") or {}).items():
-                    bwf_rows.append(
-                        (
-                            run_id,
-                            resort_id,
-                            band_key,
-                            win_key,
-                            win_val.get("snow_min_in"),
-                            win_val.get("snow_median_in"),
-                            win_val.get("snow_max_in"),
-                            win_val.get("native_snow_median_in"),
-                            win_val.get("precip_median_in"),
-                            win_val.get("avg_slr"),
-                            win_val.get("temp_min_f"),
-                            win_val.get("temp_max_f"),
-                            win_val.get("max_wind_mph"),
-                            win_val.get("snow_level_min_ft"),
-                            win_val.get("snow_level_max_ft"),
-                            win_val.get("rain_snow_risk"),
-                            win_val.get("confidence"),
-                            win_val.get("model_count"),
-                        )
-                    )
-
-        conn.executemany(
-            """
-            INSERT INTO band_window_forecasts (
-                run_id, resort_id, band_key, window_key,
-                snow_min_in, snow_median_in, snow_max_in, native_snow_median_in,
-                precip_median_in, avg_slr, temp_min_f, temp_max_f, max_wind_mph,
-                snow_level_min_ft, snow_level_max_ft, rain_snow_risk, confidence, model_count
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            bwf_rows,
-        )
+            for resort in (processed.get("resorts") or [])
+        ]
         conn.executemany(
             """
             INSERT INTO resort_run_payloads (run_id, resort_id, summary_json, detail_json)
@@ -169,6 +146,12 @@ def save_forecast_run(
             """,
             payload_rows,
         )
+
+        if keep_runs is not None and keep_runs > 0:
+            deleted = _prune_runs_in_conn(conn, keep_runs)
+
+    if deleted > 0:
+        vacuum_db(db_path)
 
     return run_id
 
@@ -213,7 +196,7 @@ def get_resort_summaries(
     run_id: int | None = None,
     db_path: Path = DEFAULT_DB_PATH,
 ) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
-    """Load overview summaries for all resorts in the target/latest run with run-to-run deltas."""
+    """Load overview summaries for all resorts in the target/latest run."""
     init_db(db_path)
     with get_connection(db_path) as conn:
         run_row = _get_run_row(conn, run_id)
@@ -222,53 +205,14 @@ def get_resort_summaries(
 
         run_meta = _row_to_run(run_row)
         payload_rows = conn.execute(
-            "SELECT resort_id, summary_json FROM resort_run_payloads WHERE run_id = ?",
+            "SELECT summary_json FROM resort_run_payloads WHERE run_id = ?",
             (run_row["id"],),
         ).fetchall()
-
-        prev_row = conn.execute(
-            """
-            SELECT id, fetched_at_utc FROM forecast_runs
-            WHERE fetched_at_utc < ?
-            ORDER BY fetched_at_utc DESC, id DESC LIMIT 1
-            """,
-            (run_row["fetched_at_utc"],),
-        ).fetchone()
-
-        prev_deltas: dict[tuple[str, str], float] = {}
-        if prev_row is not None:
-            prev_bwf = conn.execute(
-                """
-                SELECT resort_id, window_key, snow_median_in
-                FROM band_window_forecasts
-                WHERE run_id = ? AND band_key = 'summit' AND window_key IN ('72h', '168h')
-                """,
-                (prev_row["id"],),
-            ).fetchall()
-            for r in prev_bwf:
-                if r["snow_median_in"] is not None:
-                    prev_deltas[(r["resort_id"], r["window_key"])] = float(r["snow_median_in"])
 
         summaries: list[dict[str, Any]] = []
         for p_row in payload_rows:
             summary = json.loads(p_row["summary_json"])
-            rid = summary.get("id")
-            summit_wins = ((summary.get("bands") or {}).get("summit") or {}).get("windows") or {}
-            curr_72 = (summit_wins.get("72h") or {}).get("snow_median_in")
-            curr_168 = (summit_wins.get("168h") or {}).get("snow_median_in")
-
             summary["run_id"] = run_meta["id"]
-            if prev_row is not None and rid:
-                p72 = prev_deltas.get((rid, "72h"))
-                p168 = prev_deltas.get((rid, "168h"))
-                summary["run_delta"] = {
-                    "previous_run_at_utc": prev_row["fetched_at_utc"],
-                    "summit_72h_in": round(curr_72 - p72, 2) if curr_72 is not None and p72 is not None else None,
-                    "summit_168h_in": round(curr_168 - p168, 2) if curr_168 is not None and p168 is not None else None,
-                }
-            else:
-                summary["run_delta"] = None
-
             summaries.append(summary)
 
     return run_meta, summaries

@@ -1,4 +1,4 @@
-"""Seed definitions for the initial five ski resorts."""
+"""Static seed definitions for tracked ski resorts."""
 
 from __future__ import annotations
 

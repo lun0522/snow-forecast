@@ -100,17 +100,6 @@ export interface ModelDetail {
   display_name: string;
   coverage_hours: number;
   windows: Record<WindowKey, ModelWindowSummary>;
-  hourly: Array<{
-    time_utc: string;
-    covered: boolean;
-    physics_snow_in: number | null;
-    native_snow_in: number | null;
-    settled_snow_in: number | null;
-    temp_f: number | null;
-    slr: number | null;
-    wind_mph: number | null;
-    snow_level_ft: number | null;
-  }>;
 }
 
 export interface BandSummary {
@@ -126,6 +115,30 @@ export interface BandDetail extends BandSummary {
   models: Record<string, ModelDetail>;
 }
 
+export interface SnowpackStation {
+  id: string;
+  name: string;
+  elevation_m: number;
+  elevation_ft: number;
+  distance_km: number;
+  snow_depth_cm: number;
+  snow_depth_in: number;
+  swe_mm: number | null;
+  swe_in: number | null;
+  delta_24h_cm: number | null;
+  observed_at_utc: string;
+}
+
+export interface CurrentSnowpack {
+  status: "ok" | "unavailable";
+  label: string;
+  network: string;
+  source_name: string;
+  fetched_at_utc: string;
+  stations: SnowpackStation[];
+  error?: string;
+}
+
 export interface ResortSummary {
   id: string;
   name: string;
@@ -134,12 +147,8 @@ export interface ResortSummary {
   timezone: string;
   fetched_at_utc: string;
   run_id?: number;
+  current_snowpack?: CurrentSnowpack | null;
   bands: Record<BandKey, BandSummary>;
-  run_delta: {
-    previous_run_at_utc: string;
-    summit_72h_in: number | null;
-    summit_168h_in: number | null;
-  } | null;
 }
 
 export interface ResortDetail {
@@ -151,6 +160,7 @@ export interface ResortDetail {
   fetched_at_utc: string;
   anchor_utc: string;
   run_id?: number;
+  current_snowpack?: CurrentSnowpack | null;
   bands: Record<BandKey, BandDetail>;
 }
 
