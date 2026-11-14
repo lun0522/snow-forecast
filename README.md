@@ -42,6 +42,8 @@ python3 -m venv .venv
 
 # Steps 3 & 4: Fetch live data, run snow physics + consensus engine, and store in SQLite (data/snow.db)
 .venv/bin/python -m app.scripts.update
+# Export static JSON payloads for GitHub Pages / static hosting:
+.venv/bin/python -m app.scripts.update --export-dir ../frontend/public/data
 # Or reprocess the latest saved snapshot offline:
 .venv/bin/python -m app.scripts.update --from-snapshot
 
@@ -68,3 +70,10 @@ npm run dev
 ```
 
 Open `http://localhost:5173` in your browser (`/api/*` requests proxy automatically to `http://127.0.0.1:8000`).
+
+## Deploying to GitHub Pages (Static + GitHub Actions)
+
+1. Push to `main` (e.g. `git@github.com:lun0522/snow-forecast.git`).
+2. In your GitHub repository: **Settings → Pages → Build and deployment → Source**, choose **GitHub Actions**.
+3. Run the **Deploy Static Forecast Site to Pages** workflow (`.github/workflows/deploy.yml`) manually once or let it trigger automatically on push and every 4 hours via cron (`17 */4 * * *`).
+4. The workflow fetches fresh forecasts with `python -m app.scripts.update --export-dir ../frontend/public/data`, builds Vite in static mode (`VITE_DATA_MODE=static`), and publishes `frontend/dist` to GitHub Pages.

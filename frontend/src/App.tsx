@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { AlertCircle, Moon, RefreshCw, Sun } from "lucide-react";
-import { fetchResortDetail, fetchResorts, refreshForecasts } from "./api";
+import { AlertCircle, Clock, Moon, Sun } from "lucide-react";
+import { fetchResortDetail, fetchResorts } from "./api";
 import { DailyConsensusChart } from "./components/DailyConsensusChart";
 import { HourlyMeteogram } from "./components/HourlyMeteogram";
 import { ModelComparisonTable } from "./components/ModelComparisonTable";
 import { SnowpackPanel } from "./components/SnowpackPanel";
 import type { BandKey, ForecastRunMeta, ResortDetail, ResortSummary } from "./types";
-import { formatElevM } from "./utils/format";
+import { formatElevM, formatLastUpdated } from "./utils/format";
 
 type Theme = "light" | "dark";
 const THEME_STORAGE_KEY = "powderconsensus-theme";
@@ -36,7 +36,6 @@ export function App() {
 
   const [loadingOverview, setLoadingOverview] = useState<boolean>(true);
   const [loadingDetail, setLoadingDetail] = useState<boolean>(false);
-  const [refreshing, setRefreshing] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const loadOverview = useCallback(async () => {
@@ -94,21 +93,6 @@ export function App() {
       cancelled = true;
     };
   }, [selectedResortId, runMeta?.id, summaries.length]);
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    setErrorMsg(null);
-    try {
-      await refreshForecasts();
-      const data = await fetchResorts();
-      setRunMeta(data.run);
-      setSummaries(data.resorts);
-    } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : "Forecast refresh failed");
-    } finally {
-      setRefreshing(false);
-    }
-  };
 
   const activeSummary = summaries.find((s) => s.id === selectedResortId) ?? null;
   const activeBand = detail?.bands[selectedBand] ?? null;
@@ -177,15 +161,16 @@ export function App() {
             {loadingDetail && (
               <span className="text-xs text-sky-700 dark:text-sky-300">Syncing band details...</span>
             )}
-            <button
-              type="button"
-              disabled={refreshing}
-              onClick={handleRefresh}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-sky-500/35 bg-sky-50 px-3 py-1.5 text-xs font-semibold text-sky-700 transition hover:bg-sky-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-sky-400/40 dark:bg-sky-500/15 dark:text-sky-200 dark:hover:bg-sky-500/25"
+            <div
+              title={runMeta?.fetched_at_utc ? `Fetched UTC: ${runMeta.fetched_at_utc}` : undefined}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/90 bg-slate-50 px-2.5 py-1.5 text-xs text-slate-600 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-300"
             >
-              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
-              {refreshing ? "Refreshing..." : "Refresh Data"}
-            </button>
+              <Clock className="h-3.5 w-3.5 shrink-0 text-slate-500 dark:text-slate-400" />
+              <span className="text-slate-500 dark:text-slate-400">Last updated:</span>
+              <span className="font-medium tabular-nums text-slate-800 dark:text-slate-100">
+                {formatLastUpdated(runMeta?.fetched_at_utc)}
+              </span>
+            </div>
             <button
               type="button"
               onClick={() => setTheme((prev) => (prev === "dark" ? "light" : "dark"))}
@@ -209,19 +194,19 @@ export function App() {
 
         {loadingOverview ? (
           <div className="rounded-xl border border-slate-200 bg-white/80 p-10 text-center text-sm text-slate-600 shadow-xs dark:border-slate-800 dark:bg-slate-900/50 dark:text-slate-400 dark:shadow-none">
-            Loading forecast data from SQLite...
+            Loading forecast data...
           </div>
         ) : summaries.length === 0 ? (
           <div className="rounded-xl border border-slate-200 bg-white/90 p-10 text-center space-y-3 shadow-xs dark:border-slate-800 dark:bg-slate-900/60 dark:shadow-none">
             <h2 className="text-base font-semibold text-slate-900 dark:text-white">
-              No Forecast Runs Stored Yet
+              No Forecast Runs Available Yet
             </h2>
             <p className="text-xs text-slate-600 dark:text-slate-400">
-              Click <strong>Refresh Data</strong> above or run{" "}
+              Run{" "}
               <code className="rounded bg-slate-100 px-1.5 py-0.5 text-sky-700 dark:bg-slate-950 dark:text-sky-300">
                 python -m app.scripts.update
               </code>{" "}
-              to ingest live weather models and populate the dashboard.
+              (or trigger the GitHub Actions Pages workflow) to ingest live weather models and populate the dashboard.
             </p>
           </div>
         ) : (

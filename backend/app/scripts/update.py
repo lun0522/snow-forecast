@@ -14,7 +14,12 @@ from app.scripts.fetch_snapshot import (
     fetch_all_data,
     load_resorts,
 )
-from app.storage.db import DEFAULT_DB_PATH, save_forecast_run
+from app.storage.db import (
+    DEFAULT_DB_PATH,
+    get_resort_detail,
+    get_resort_summaries,
+    save_forecast_run,
+)
 
 
 def run_update_pipeline(
@@ -49,6 +54,43 @@ def run_update_pipeline(
         "resorts_count": len(processed["resorts"]),
         "processed": processed,
     }
+
+
+def export_static_data(
+    out_dir: Path,
+    db_path: Path = DEFAULT_DB_PATH,
+    resorts_path: Path = DEFAULT_RESORTS_PATH,
+) -> Path:
+    """Export the latest forecast run as static JSON files matching the REST API schema."""
+    run_meta, summaries = get_resort_summaries(db_path=db_path)
+    if not summaries:
+        raise RuntimeError("No resort forecasts available to export.")
+
+    try:
+        order = {r["id"]: idx for idx, r in enumerate(load_resorts(resorts_path))}
+    except FileNotFoundError:
+        order = {}
+    summaries.sort(key=lambda s: order.get(s["id"], 999))
+
+    out_path = Path(out_dir)
+    resorts_dir = out_path / "resorts"
+    resorts_dir.mkdir(parents=True, exist_ok=True)
+
+    (out_path / "resorts.json").write_text(
+        json.dumps({"run": run_meta, "resorts": summaries}, separators=(",", ":")),
+        encoding="utf-8",
+    )
+
+    for summary in summaries:
+        resort_id = summary["id"]
+        detail = get_resort_detail(resort_id=resort_id, db_path=db_path)
+        if detail is not None:
+            (resorts_dir / f"{resort_id}.json").write_text(
+                json.dumps(detail, separators=(",", ":")),
+                encoding="utf-8",
+            )
+
+    return out_path
 
 
 def _fmt_range(win: dict[str, Any]) -> str:
@@ -107,6 +149,12 @@ def main() -> None:
         default=DEFAULT_DB_PATH,
         help="Path to SQLite database.",
     )
+    parser.add_argument(
+        "--export-dir",
+        type=Path,
+        default=None,
+        help="Optional directory to write static JSON payloads (resorts.json + resorts/<id>.json).",
+    )
     args = parser.parse_args()
 
     result = run_update_pipeline(
@@ -115,6 +163,9 @@ def main() -> None:
         from_snapshot=args.from_snapshot,
     )
     print_consensus_report(result)
+    if args.export_dir is not None:
+        exported = export_static_data(args.export_dir, db_path=args.db)
+        print(f"\nExported static JSON payloads to {exported}")
 
 
 if __name__ == "__main__":

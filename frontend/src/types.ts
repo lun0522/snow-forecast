@@ -168,11 +168,3 @@ export interface ResortsOverviewResponse {
   run: ForecastRunMeta | null;
   resorts: ResortSummary[];
 }
-
-export interface RefreshResponse {
-  status: string;
-  run_id: number;
-  fetched_at_utc: string;
-  resorts_count: number;
-  resorts: ResortSummary[];
-}

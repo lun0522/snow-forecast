@@ -12,7 +12,7 @@ from fastapi.testclient import TestClient
 
 from app.engine.blending import process_snapshot
 from app.main import create_app
-from app.scripts.update import run_update_pipeline
+from app.scripts.update import export_static_data, run_update_pipeline
 from app.storage.db import get_connection, get_resort_detail, get_resort_summaries, prune_old_runs, save_forecast_run
 
 
@@ -194,6 +194,33 @@ class ApiAndDbTests(unittest.TestCase):
 
             bad_resort = client.get("/api/resorts/unknown")
             self.assertEqual(bad_resort.status_code, 404)
+
+    def test_export_static_data_writes_overview_and_resort_json(self) -> None:
+        empty_export = self.tmp_path / "empty_dist_data"
+        with self.assertRaises(RuntimeError):
+            export_static_data(empty_export, db_path=self.db_path, resorts_path=self.resorts_path)
+
+        now = datetime.now(timezone.utc).replace(minute=0, second=0, microsecond=0)
+        snap = _make_snapshot(now, precip_mm_per_hour=2.0)
+        run_update_pipeline(
+            db_path=self.db_path,
+            resorts_path=self.resorts_path,
+            snapshot_path=self.snapshot_path,
+            fetcher=lambda _resorts: snap,
+        )
+
+        export_dir = self.tmp_path / "public_data"
+        out = export_static_data(export_dir, db_path=self.db_path, resorts_path=self.resorts_path)
+        self.assertEqual(out, export_dir)
+
+        overview = json.loads((export_dir / "resorts.json").read_text(encoding="utf-8"))
+        self.assertIsNotNone(overview["run"])
+        self.assertEqual(len(overview["resorts"]), 1)
+        self.assertEqual(overview["resorts"][0]["id"], "kirkwood")
+
+        detail = json.loads((export_dir / "resorts" / "kirkwood.json").read_text(encoding="utf-8"))
+        self.assertEqual(detail["id"], "kirkwood")
+        self.assertIn("ecmwf_ifs025", detail["bands"]["summit"]["models"])
 
 
 if __name__ == "__main__":

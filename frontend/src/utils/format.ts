@@ -104,6 +104,19 @@ export function formatLocalHourTick(timeUtcIso: string, tz: string, includeDate 
   }).format(dt);
 }
 
+export function formatLastUpdated(timeUtcIso: string | null | undefined): string {
+  if (!timeUtcIso) return "—";
+  const dt = new Date(timeUtcIso);
+  if (Number.isNaN(dt.getTime())) return timeUtcIso;
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  }).format(dt);
+}
+
 export function getSlrQuality(avgSlr: number): SlrQuality {
   const rounded = Number(avgSlr.toFixed(1));
   if (rounded < 10.0) {

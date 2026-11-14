@@ -1,14 +1,18 @@
 import type {
   ForecastRunMeta,
-  RefreshResponse,
   ResortDetail,
   ResortsOverviewResponse,
 } from "./types";
 
+const USE_STATIC =
+  import.meta.env.VITE_DATA_MODE === "static" ||
+  (!import.meta.env.DEV && !import.meta.env.VITE_API_BASE && import.meta.env.VITE_DATA_MODE !== "api");
+
 const API_BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? "";
+const STATIC_BASE = `${import.meta.env.BASE_URL}data`;
 
 async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, init);
+  const response = await fetch(path, init);
   if (!response.ok) {
     let message = `Request failed (${response.status})`;
     try {
@@ -29,17 +33,20 @@ export function fetchHealth(): Promise<{
   latest_run: ForecastRunMeta | null;
   resorts_count: number;
 }> {
-  return requestJson("/api/health");
+  return requestJson(`${API_BASE}/api/health`);
 }
 
 export function fetchResorts(): Promise<ResortsOverviewResponse> {
-  return requestJson("/api/resorts");
+  if (USE_STATIC) {
+    return requestJson(`${STATIC_BASE}/resorts.json`, { cache: "no-cache" });
+  }
+  return requestJson(`${API_BASE}/api/resorts`);
 }
 
 export function fetchResortDetail(resortId: string): Promise<ResortDetail> {
-  return requestJson(`/api/resorts/${encodeURIComponent(resortId)}`);
-}
-
-export function refreshForecasts(): Promise<RefreshResponse> {
-  return requestJson("/api/refresh", { method: "POST" });
+  const encodedId = encodeURIComponent(resortId);
+  if (USE_STATIC) {
+    return requestJson(`${STATIC_BASE}/resorts/${encodedId}.json`, { cache: "no-cache" });
+  }
+  return requestJson(`${API_BASE}/api/resorts/${encodedId}`);
 }
