@@ -3,7 +3,6 @@ import { ChevronDown } from "lucide-react";
 import { COPY, type Lang } from "../i18n";
 import type { BandDetail, WindowKey } from "../types";
 import {
-  formatElevM,
   formatSnowCm,
   formatSnowCmRange,
   formatTempC,
@@ -57,7 +56,7 @@ export function ModelComparisonTable({ band, lang = "zh" }: ModelComparisonTable
       >
         <div>
           <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-            {t.titlePrefix} · {band.label} ({formatElevM(band.elevation_ft, band.elevation_m)})
+            {t.titlePrefix}
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400">
             {t.subtitle}

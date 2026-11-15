@@ -3,8 +3,6 @@ import { COPY, type Lang } from "../i18n";
 import type { DailyBucket } from "../types";
 import { TermTooltip } from "./TermTooltip";
 import {
-  formatElevM,
-  formatElevRangeM,
   formatSnowCm,
   formatTempC,
   getSlrQuality,
@@ -48,18 +46,12 @@ function TooltipColorLegend({
 
 interface DailyConsensusChartProps {
   daily: DailyBucket[];
-  elevationFt: number;
-  elevationM?: number | null;
-  bandLabel: string;
   isDark?: boolean;
   lang?: Lang;
 }
 
 export function DailyConsensusChart({
   daily,
-  elevationFt,
-  elevationM,
-  bandLabel,
   isDark = false,
   lang = "zh",
 }: DailyConsensusChartProps) {
@@ -70,8 +62,9 @@ export function DailyConsensusChart({
     ? {
         gridStroke: "rgba(148, 163, 184, 0.14)",
         hoverBg: "rgba(56, 189, 248, 0.08)",
-        whiskerStem: "rgba(226, 232, 240, 0.65)",
-        whiskerCap: "rgba(226, 232, 240, 0.85)",
+        rangeBar: "rgba(56, 189, 248, 0.18)",
+        rangeBarHover: "rgba(56, 189, 248, 0.28)",
+        rangeBarStroke: "rgba(56, 189, 248, 0.36)",
         snowBar: "#38bdf8",
         snowBarHover: "#7dd3fc",
         mixedBar: "#f59e0b",
@@ -80,8 +73,9 @@ export function DailyConsensusChart({
     : {
         gridStroke: "rgba(100, 116, 139, 0.18)",
         hoverBg: "rgba(2, 132, 199, 0.08)",
-        whiskerStem: "rgba(51, 65, 85, 0.72)",
-        whiskerCap: "rgba(30, 41, 59, 0.88)",
+        rangeBar: "rgba(14, 165, 233, 0.20)",
+        rangeBarHover: "rgba(14, 165, 233, 0.30)",
+        rangeBarStroke: "rgba(2, 132, 199, 0.34)",
         snowBar: "#0284c7",
         snowBarHover: "#0369a1",
         mixedBar: "#d97706",
@@ -106,7 +100,8 @@ export function DailyConsensusChart({
   const plotW = svgW - padL - padR;
   const plotH = svgH - padT - padB;
   const colW = plotW / daily.length;
-  const barW = Math.min(44, colW * 0.5);
+  const barW = Math.min(48, colW * 0.56);
+  const medW = Math.min(26, barW * 0.56);
 
   const yForSnowCm = (cm: number) => padT + plotH - (cm / maxSnowCm) * plotH;
 
@@ -117,16 +112,27 @@ export function DailyConsensusChart({
 
   return (
     <div className="rounded-xl border border-slate-200/90 bg-white/90 p-4 shadow-xs md:p-5 dark:border-slate-800/90 dark:bg-slate-900/65 dark:shadow-none">
-      <div className="pb-3 border-b border-slate-200/80 dark:border-slate-800/70">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-          {t.titlePrefix} · {bandLabel} ({formatElevM(elevationFt, elevationM)})
-        </h3>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          {t.subtitle}
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-200/80 pb-3 dark:border-slate-800/70">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+            {t.titlePrefix}
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            {t.subtitle}
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-4 text-[11px] text-slate-500 dark:text-slate-400">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-block h-2 w-2 rounded-xs bg-sky-600 dark:bg-sky-400" /> {t.legendMedian}
+          </span>
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-block h-2 w-2 rounded-xs border border-sky-600/35 bg-sky-500/20 dark:border-sky-400/35 dark:bg-sky-400/20" />{" "}
+            {t.legendRange}
+          </span>
+        </div>
       </div>
 
-      {/* SVG Column + Whisker Chart */}
+      {/* SVG Range-Bar + Median Bullet Chart */}
       <div className="mt-3 overflow-x-auto">
         <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full min-w-[540px] select-none">
           {yTicks.map((tick) => (
@@ -187,45 +193,29 @@ export function DailyConsensusChart({
                   fill={isHovered ? svgColors.hoverBg : "transparent"}
                 />
 
-                {medCm > 0.05 && (
+                {maxCm > 0.1 && (
                   <rect
                     x={cx - barW / 2}
-                    y={yMed}
+                    y={yMax}
                     width={barW}
-                    height={Math.max(2, yZero - yMed)}
+                    height={Math.max(2, yMin - yMax)}
                     rx={4}
-                    fill={fillColor}
-                    fillOpacity={0.85}
+                    fill={isHovered ? svgColors.rangeBarHover : svgColors.rangeBar}
+                    stroke={svgColors.rangeBarStroke}
+                    strokeWidth={1}
                   />
                 )}
 
-                {maxCm > 0.1 && (
-                  <g>
-                    <line
-                      x1={cx}
-                      x2={cx}
-                      y1={yMax}
-                      y2={yMin}
-                      stroke={svgColors.whiskerStem}
-                      strokeWidth={1.5}
-                    />
-                    <line
-                      x1={cx - 5}
-                      x2={cx + 5}
-                      y1={yMax}
-                      y2={yMax}
-                      stroke={svgColors.whiskerCap}
-                      strokeWidth={1.5}
-                    />
-                    <line
-                      x1={cx - 5}
-                      x2={cx + 5}
-                      y1={yMin}
-                      y2={yMin}
-                      stroke={svgColors.whiskerStem}
-                      strokeWidth={1.5}
-                    />
-                  </g>
+                {medCm > 0.05 && (
+                  <rect
+                    x={cx - medW / 2}
+                    y={yMed}
+                    width={medW}
+                    height={Math.max(2, yZero - yMed)}
+                    rx={3}
+                    fill={fillColor}
+                    fillOpacity={0.9}
+                  />
                 )}
 
                 <text
@@ -254,7 +244,7 @@ export function DailyConsensusChart({
 
       {/* High-Density Daily Table */}
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[660px] text-left text-xs">
+        <table className="w-full min-w-[560px] text-left text-xs">
           <thead>
             <tr
               className={`border-b border-slate-200 text-[11px] text-slate-500 dark:border-slate-800 dark:text-slate-400 ${
@@ -295,7 +285,7 @@ export function DailyConsensusChart({
                   }
                 />
               </th>
-              <th className="py-2 px-3 font-medium">
+              <th className="py-2 pl-3 font-medium">
                 <TermTooltip
                   label={t.colWind}
                   tooltip={
@@ -309,7 +299,6 @@ export function DailyConsensusChart({
                   }
                 />
               </th>
-              <th className="py-2 pl-3 font-medium">{t.colSnowLevel}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200/80 tabular-nums dark:divide-slate-800/60">
@@ -358,7 +347,7 @@ export function DailyConsensusChart({
                       {formatTempC(day.temp_min_f)} / {formatTempC(day.temp_max_f)}
                     </span>
                   </td>
-                  <td className="py-2 px-3 text-slate-700 dark:text-slate-300">
+                  <td className="py-2 pl-3 text-slate-700 dark:text-slate-300">
                     <span
                       title={windRiskTitle(windRisk, lang)}
                       className={windBadge ? `${BADGE_PILL_BASE} ${windBadge}` : "whitespace-nowrap"}
@@ -366,9 +355,6 @@ export function DailyConsensusChart({
                       {day.max_wind_mph !== null ? `${Math.round(mphToKmh(day.max_wind_mph))} km/h` : "—"}
                       {day.max_gust_mph !== null ? ` (${Math.round(mphToKmh(day.max_gust_mph))}g)` : ""}
                     </span>
-                  </td>
-                  <td className="py-2 pl-3 text-slate-700 dark:text-slate-300">
-                    {formatElevRangeM(day.snow_level_min_ft, day.snow_level_max_ft)}
                   </td>
                 </tr>
               );

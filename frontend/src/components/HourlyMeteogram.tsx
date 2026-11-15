@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { COPY, type Lang } from "../i18n";
 import type { HourlyConsensusPoint } from "../types";
 import {
-  fToCelsius,
   formatElevM,
   formatLocalHourTick,
   formatSnowCm,
@@ -15,7 +14,6 @@ import {
 interface HourlyMeteogramProps {
   hourly: HourlyConsensusPoint[];
   timezone: string;
-  bandLabel: string;
   baseElevFt: number;
   midElevFt: number;
   summitElevFt: number;
@@ -28,7 +26,6 @@ const MAX_HORIZON_HOURS = 168;
 export function HourlyMeteogram({
   hourly,
   timezone,
-  bandLabel,
   baseElevFt,
   midElevFt,
   summitElevFt,
@@ -47,8 +44,6 @@ export function HourlyMeteogram({
         cumLine: "#67e8f9",
         settledLine: "#34d399",
         snowLvlLine: "#fbbf24",
-        tempLine: "#c084fc",
-        freezingLine: "rgba(167, 139, 250, 0.28)",
         summitBand: "rgba(56, 189, 248, 0.45)",
         midBand: "rgba(148, 163, 184, 0.35)",
         baseBand: "rgba(251, 146, 60, 0.45)",
@@ -62,8 +57,6 @@ export function HourlyMeteogram({
         cumLine: "#0891b2",
         settledLine: "#059669",
         snowLvlLine: "#d97706",
-        tempLine: "#7c3aed",
-        freezingLine: "rgba(124, 58, 237, 0.35)",
         summitBand: "rgba(2, 132, 199, 0.48)",
         midBand: "rgba(100, 116, 139, 0.42)",
         baseBand: "rgba(234, 88, 12, 0.48)",
@@ -124,19 +117,11 @@ export function HourlyMeteogram({
   const maxElevM = Math.max(summitElevM + 450, ...(snowLvlsM.length ? snowLvlsM : [summitElevM]));
   const elevSpanM = Math.max(400, maxElevM - minElevM);
 
-  const tempsC = visible
-    .map((p) => (p.temp_median_f !== null ? fToCelsius(p.temp_median_f) : null))
-    .filter((v): v is number => v !== null);
-  const minTempC = Math.min(-12, ...(tempsC.length ? tempsC : [-8]));
-  const maxTempC = Math.max(6, ...(tempsC.length ? tempsC : [4]));
-  const tempSpanC = Math.max(6, maxTempC - minTempC);
-
   const xFor = (i: number) => padL + (visible.length > 1 ? (i / (visible.length - 1)) * plotW : 0);
   const barStep = plotW / Math.max(1, visible.length);
   const yForRateCm = (cm: number) => sPadT + sPlotH - (cm / maxRateCm) * sPlotH;
   const yForCumCm = (cm: number) => sPadT + sPlotH - (cm / maxCumCm) * sPlotH;
   const yForElevM = (m: number) => lPadT + lPlotH - ((m - minElevM) / elevSpanM) * lPlotH;
-  const yForTempC = (c: number) => lPadT + lPlotH - ((c - minTempC) / tempSpanC) * lPlotH;
 
   const buildPath = (pts: Array<{ x: number; y: number }>) => {
     if (!pts.length) return "";
@@ -159,13 +144,6 @@ export function HourlyMeteogram({
       )
       .filter((pt): pt is { x: number; y: number } => pt !== null),
   );
-  const tempPath = buildPath(
-    visible
-      .map((p, i) =>
-        p.temp_median_f !== null ? { x: xFor(i), y: yForTempC(fToCelsius(p.temp_median_f)) } : null,
-      )
-      .filter((pt): pt is { x: number; y: number } => pt !== null),
-  );
 
   const dayTickIndices = visible
     .map((pt, i) => ({ pt, i }))
@@ -184,7 +162,7 @@ export function HourlyMeteogram({
     <div className="rounded-xl border border-slate-200/90 bg-white/90 p-4 shadow-xs md:p-5 space-y-4 dark:border-slate-800/90 dark:bg-slate-900/65 dark:shadow-none">
       <div className="border-b border-slate-200/80 pb-3 dark:border-slate-800/70">
         <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-          {t.titlePrefix} · {bandLabel}
+          {t.titlePrefix}
         </h3>
         <p className="text-xs text-slate-500 dark:text-slate-400">
           {t.subtitle}
@@ -376,9 +354,6 @@ export function HourlyMeteogram({
             <span className="inline-flex items-center gap-1.5">
               <span className="inline-block h-0.5 w-4 bg-amber-600 dark:bg-amber-400" /> {t.snowLevelLegend}
             </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="inline-block h-0.5 w-4 bg-violet-600 dark:bg-violet-400" /> {t.airTempLegend}
-            </span>
             <span className="text-slate-500">{t.dashedLinesLegend}</span>
           </div>
         </div>
@@ -386,9 +361,9 @@ export function HourlyMeteogram({
         <div className="overflow-x-auto">
           <svg viewBox={`0 0 ${svgW} ${lvlH}`} className="w-full min-w-[600px] select-none">
             {[
-              { label: "Summit", elevM: summitElevM, color: svgColors.summitBand },
-              { label: "Mid", elevM: midElevM, color: svgColors.midBand },
-              { label: "Base", elevM: baseElevM, color: svgColors.baseBand },
+              { label: t.bandSummit, elevM: summitElevM, color: svgColors.summitBand },
+              { label: t.bandMid, elevM: midElevM, color: svgColors.midBand },
+              { label: t.bandBase, elevM: baseElevM, color: svgColors.baseBand },
             ].map((band) => {
               const y = yForElevM(band.elevM);
               return (
@@ -410,33 +385,17 @@ export function HourlyMeteogram({
                   >
                     {Math.round(band.elevM)}m
                   </text>
+                  <text
+                    x={svgW - padR + 6}
+                    y={y + 3}
+                    textAnchor="start"
+                    className="fill-slate-500 text-[9.5px] dark:fill-slate-400"
+                  >
+                    {band.label}
+                  </text>
                 </g>
               );
             })}
-
-            {[minTempC, (minTempC + maxTempC) / 2, maxTempC].map((tVal) => (
-              <text
-                key={tVal}
-                x={svgW - padR + 6}
-                y={yForTempC(tVal) + 3}
-                textAnchor="start"
-                className="fill-violet-700 text-[10px] tabular-nums dark:fill-violet-300/80"
-              >
-                {Math.round(tVal)}°C
-              </text>
-            ))}
-
-            {/* 0°C Freezing Line */}
-            {0 >= minTempC && 0 <= maxTempC && (
-              <line
-                x1={padL}
-                x2={svgW - padR}
-                y1={yForTempC(0)}
-                y2={yForTempC(0)}
-                stroke={svgColors.freezingLine}
-                strokeDasharray="2 4"
-              />
-            )}
 
             {dayTickIndices.map(({ pt, i }) => {
               const x = xFor(i);
@@ -457,7 +416,6 @@ export function HourlyMeteogram({
             })}
 
             {snowLvlPath && <path d={snowLvlPath} fill="none" stroke={svgColors.snowLvlLine} strokeWidth={2} />}
-            {tempPath && <path d={tempPath} fill="none" stroke={svgColors.tempLine} strokeWidth={1.6} opacity={0.85} />}
 
             {hoverIdx !== null && (
               <line

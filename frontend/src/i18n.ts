@@ -7,6 +7,7 @@ export const LANG_STORAGE_KEY = "powderconsensus-lang";
 export interface UiCopy {
   header: {
     selectResort: string;
+    elevationAria: string;
     bands: Record<BandKey, string>;
     syncing: string;
     lastUpdated: string;
@@ -35,13 +36,14 @@ export interface UiCopy {
   daily: {
     titlePrefix: string;
     subtitle: string;
+    legendMedian: string;
+    legendRange: string;
     colDay: string;
     colSnowMedian: string;
     colSlr: string;
     slrTooltip: string;
     colTemp: string;
     colWind: string;
-    colSnowLevel: string;
     phasePrefix: string;
     wetSnow: string;
     powderSnow: string;
@@ -69,8 +71,10 @@ export interface UiCopy {
     settledDepth: string;
     panelBTitle: string;
     snowLevelLegend: string;
-    airTempLegend: string;
     dashedLinesLegend: string;
+    bandSummit: string;
+    bandMid: string;
+    bandBase: string;
   };
   models: {
     titlePrefix: string;
@@ -99,6 +103,7 @@ export const COPY: Record<Lang, UiCopy> = {
   en: {
     header: {
       selectResort: "Select ski resort",
+      elevationAria: "Select elevation band",
       bands: {
         base: "base",
         mid: "mid",
@@ -132,7 +137,9 @@ export const COPY: Record<Lang, UiCopy> = {
     daily: {
       titlePrefix: "7-Day Snow Forecast",
       subtitle:
-        "Bars show median snowfall (cm) across models; vertical lines show the min–max model range per day",
+        "Bars show daily median snowfall (cm); shaded bands show the min–max model prediction range",
+      legendMedian: "Daily median",
+      legendRange: "Model prediction range (min–max)",
       colDay: "Local Day",
       colSnowMedian: "Snow Median (Range)",
       colSlr: "SLR",
@@ -140,7 +147,6 @@ export const COPY: Record<Lang, UiCopy> = {
         "Snow-to-Liquid Ratio — units of snow depth per 1 unit of liquid water (e.g., 15:1 = 15 cm snow per 10 mm water).",
       colTemp: "Temp Lo / Hi",
       colWind: "Max Wind / Gust",
-      colSnowLevel: "Snow Level",
       phasePrefix: "Phase:",
       wetSnow: "Wet (<10:1)",
       powderSnow: "Powder (≥15:1)",
@@ -167,10 +173,12 @@ export const COPY: Record<Lang, UiCopy> = {
       hourlyMax: "Hourly max",
       cumulativeSnow: "Cumulative snow median",
       settledDepth: "Settled depth median",
-      panelBTitle: "Snow Level (m) vs Resort Elevations & Temp (°C)",
+      panelBTitle: "Snow Level (m) vs Resort Elevations",
       snowLevelLegend: "Snow level (m)",
-      airTempLegend: "Air temp (°C)",
       dashedLinesLegend: "Dashed lines: Base / Mid / Summit (m)",
+      bandSummit: "Summit",
+      bandMid: "Mid",
+      bandBase: "Base",
     },
     models: {
       titlePrefix: "Forecast by Weather Model",
@@ -215,6 +223,7 @@ export const COPY: Record<Lang, UiCopy> = {
   zh: {
     header: {
       selectResort: "选择滑雪场",
+      elevationAria: "选择海拔区域",
       bands: {
         base: "山脚",
         mid: "半山",
@@ -247,7 +256,9 @@ export const COPY: Record<Lang, UiCopy> = {
     },
     daily: {
       titlePrefix: "7天降雪预报",
-      subtitle: "柱状图为各模型降雪量中位数 (cm)；竖线表示每日各模型的最小–最大范围",
+      subtitle: "实心柱状为各模型每日降雪中位数 (cm)；浅色背景带表示模型最小–最大预测范围",
+      legendMedian: "每日中位数",
+      legendRange: "模型预测范围 (最小–最大)",
       colDay: "日期",
       colSnowMedian: "降雪中位数 (范围)",
       colSlr: "雪水比 SLR",
@@ -255,7 +266,6 @@ export const COPY: Record<Lang, UiCopy> = {
         "雪水比 (Snow-to-Liquid Ratio)：每 1 份液态水可形成的降雪厚度（如 15:1 表示 10 mm 水对应 15 cm 雪）。",
       colTemp: "最低 / 最高温",
       colWind: "最大风速 / 阵风",
-      colSnowLevel: "雪线海拔",
       phasePrefix: "降水相态:",
       wetSnow: "湿雪 (<10:1)",
       powderSnow: "粉雪 (≥15:1)",
@@ -281,10 +291,12 @@ export const COPY: Record<Lang, UiCopy> = {
       hourlyMax: "逐小时最大值",
       cumulativeSnow: "累计降雪中位数",
       settledDepth: "沉降雪深中位数",
-      panelBTitle: "雪线高度 (m) 对比雪场海拔与气温 (°C)",
+      panelBTitle: "雪线高度 (m) 对比雪场海拔",
       snowLevelLegend: "雪线高度 (m)",
-      airTempLegend: "气温 (°C)",
       dashedLinesLegend: "虚线：山脚 / 半山 / 山顶 (m)",
+      bandSummit: "山顶",
+      bandMid: "半山",
+      bandBase: "山脚",
     },
     models: {
       titlePrefix: "各气象模型降雪预报",

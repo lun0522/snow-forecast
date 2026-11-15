@@ -44,23 +44,6 @@ export function formatElevM(
   return `${Math.round(ftToMeters(feet)).toLocaleString()} m`;
 }
 
-export function formatElevRangeM(
-  minFt: number | null | undefined,
-  maxFt: number | null | undefined,
-): string {
-  if (
-    minFt === null ||
-    minFt === undefined ||
-    maxFt === null ||
-    maxFt === undefined ||
-    Number.isNaN(minFt) ||
-    Number.isNaN(maxFt)
-  ) {
-    return "—";
-  }
-  return `${Math.round(ftToMeters(minFt)).toLocaleString()}–${Math.round(ftToMeters(maxFt)).toLocaleString()} m`;
-}
-
 export function formatTempC(fahrenheit: number | null | undefined, digits = 0): string {
   if (fahrenheit === null || fahrenheit === undefined || Number.isNaN(fahrenheit)) {
     return "—";

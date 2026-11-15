@@ -45,7 +45,7 @@ export function App() {
   const [runMeta, setRunMeta] = useState<ForecastRunMeta | null>(null);
   const [summaries, setSummaries] = useState<ResortSummary[]>([]);
   const [selectedResortId, setSelectedResortId] = useState<string>("kirkwood");
-  const [selectedBand, setSelectedBand] = useState<BandKey>("summit");
+  const [selectedBand, setSelectedBand] = useState<BandKey>("base");
 
   const [detail, setDetail] = useState<ResortDetail | null>(null);
 
@@ -149,7 +149,11 @@ export function App() {
 
             {/* Elevation Band Selector */}
             {bandOptionsSource && (
-              <div className="inline-flex items-center rounded-lg border border-slate-200 bg-slate-100/90 p-0.5 dark:border-slate-800 dark:bg-slate-950/80">
+              <div
+                role="group"
+                aria-label={t.header.elevationAria}
+                className="inline-flex items-center gap-0.5 rounded-xl border border-slate-300/90 bg-slate-100 p-1 shadow-xs dark:border-slate-700/90 dark:bg-slate-900/90"
+              >
                 {(["base", "mid", "summit"] as BandKey[]).map((bk) => {
                   const band = bandOptionsSource[bk];
                   if (!band) return null;
@@ -159,19 +163,23 @@ export function App() {
                     <button
                       key={bk}
                       type="button"
+                      aria-pressed={active}
+                      title={band.label}
                       onClick={() => setSelectedBand(bk)}
-                      className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs transition ${
+                      className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[13px] transition ${
                         active
-                          ? "bg-white text-slate-900 font-semibold shadow-xs ring-1 ring-slate-200/80 dark:bg-sky-500/20 dark:text-white dark:ring-0"
-                          : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200"
+                          ? "bg-sky-600 font-semibold text-white shadow-sm dark:bg-sky-500 dark:text-slate-950"
+                          : "font-medium text-slate-700 hover:bg-white/80 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white"
                       }`}
                     >
-                      <span className={lang === "en" ? "uppercase tracking-wider" : ""}>
+                      <span className={lang === "en" ? "uppercase tracking-wide" : ""}>
                         {t.header.bands[bk]}
                       </span>
                       <span
-                        className={`tabular-nums text-[11px] ${
-                          active ? "text-sky-700 dark:text-slate-300/90" : "text-slate-500 dark:text-slate-400"
+                        className={`tabular-nums text-xs ${
+                          active
+                            ? "font-medium text-sky-100 dark:text-slate-900/80"
+                            : "text-slate-500 dark:text-slate-400"
                         }`}
                       >
                         {formatElevM(band.elevation_ft, explicitM)}
@@ -279,9 +287,6 @@ export function App() {
                 {/* Daily 7-Day Consensus Bar + Spread Chart & Local Day Table */}
                 <DailyConsensusChart
                   daily={activeBand.daily}
-                  elevationFt={activeBand.elevation_ft}
-                  elevationM={activeBand.elevation_m}
-                  bandLabel={activeBand.label}
                   isDark={isDark}
                   lang={lang}
                 />
@@ -290,7 +295,6 @@ export function App() {
                 <HourlyMeteogram
                   hourly={activeBand.hourly}
                   timezone={detail.timezone}
-                  bandLabel={activeBand.label}
                   baseElevFt={detail.bands.base?.elevation_ft ?? activeBand.elevation_ft}
                   midElevFt={detail.bands.mid?.elevation_ft ?? activeBand.elevation_ft}
                   summitElevFt={detail.bands.summit?.elevation_ft ?? activeBand.elevation_ft}
