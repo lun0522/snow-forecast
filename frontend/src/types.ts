@@ -17,7 +17,6 @@ export interface WindowSummary {
   snow_median_in: number;
   snow_max_in: number;
   native_snow_median_in: number;
-  precip_median_in: number;
   avg_slr: number;
   snow_fraction: number;
   rain_snow_risk: RainSnowRisk;
@@ -42,7 +41,6 @@ export interface DailyBucket {
   snow_median_in: number;
   snow_max_in: number;
   native_snow_median_in: number;
-  precip_median_in: number;
   avg_slr: number;
   snow_fraction: number;
   rain_snow_risk: RainSnowRisk;
@@ -66,7 +64,6 @@ export interface HourlyConsensusPoint {
   snow_median_in: number;
   snow_max_in: number;
   settled_snow_in: number;
-  precip_median_in: number;
   temp_median_f: number | null;
   temp_min_f: number | null;
   temp_max_f: number | null;

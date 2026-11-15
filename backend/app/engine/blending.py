@@ -409,7 +409,6 @@ def _aggregate_consensus_slice(
             "snow_median_in": 0.0,
             "snow_max_in": 0.0,
             "native_snow_median_in": 0.0,
-            "precip_median_in": 0.0,
             "avg_slr": 10.0,
             "snow_fraction": 0.5,
             "rain_snow_risk": "mixed",
@@ -449,7 +448,6 @@ def _aggregate_consensus_slice(
             "snow_median_in": 0.0,
             "snow_max_in": 0.0,
             "native_snow_median_in": 0.0,
-            "precip_median_in": 0.0,
             "avg_slr": 10.0,
             "snow_fraction": 0.5,
             "rain_snow_risk": "mixed",
@@ -488,7 +486,6 @@ def _aggregate_consensus_slice(
         "snow_median_in": round(median(snows), 2),
         "snow_max_in": round(max(snows), 2),
         "native_snow_median_in": round(median(natives), 2),
-        "precip_median_in": round(med_precip, 2),
         "avg_slr": round(median(slrs), 1),
         "snow_fraction": round(med_frac, 2),
         "rain_snow_risk": risk,
@@ -521,7 +518,6 @@ def _build_consensus_hourly(
         active = [rows[idx] for rows in model_series.values() if idx < len(rows) and rows[idx]["covered"]]
 
         snows = [float(r["physics_snow_in"] or 0.0) for r in active]
-        precips = [float(r["precip_in"] or 0.0) for r in active]
         temps_f = [float(r["temp_f"]) for r in active if r["temp_f"] is not None]
         winds = [float(r["wind_mph"]) for r in active if r["wind_mph"] is not None]
         gusts = [float(r["wind_gust_mph"]) for r in active if r["wind_gust_mph"] is not None]
@@ -547,7 +543,6 @@ def _build_consensus_hourly(
                 "snow_median_in": snow_med,
                 "snow_max_in": round(max(snows), 3) if snows else 0.0,
                 "settled_snow_in": 0.0,
-                "precip_median_in": round(median(precips), 3) if precips else 0.0,
                 "temp_median_f": temp_med_f,
                 "temp_min_f": round(min(temps_f), 1) if temps_f else None,
                 "temp_max_f": round(max(temps_f), 1) if temps_f else None,

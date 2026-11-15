@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { COPY, type Lang } from "../i18n";
 import type { DailyBucket } from "../types";
+import { TermTooltip } from "./TermTooltip";
 import {
   formatElevM,
   formatElevRangeM,
-  formatPrecipMm,
   formatSnowCm,
   formatTempC,
   getSlrQuality,
@@ -20,6 +20,31 @@ import {
 } from "../utils/format";
 
 const BADGE_PILL_BASE = "inline-block whitespace-nowrap rounded border px-2 py-0.5 font-medium";
+const AMBER_SWATCH = "bg-amber-500 dark:bg-amber-400/80";
+const SKY_SWATCH = "bg-sky-500 dark:bg-sky-400/80";
+const ROSE_SWATCH = "bg-rose-500 dark:bg-rose-400/80";
+
+function TooltipColorLegend({
+  heading,
+  items,
+}: {
+  heading?: string;
+  items: Array<{ swatchClass: string; text: string }>;
+}) {
+  return (
+    <div className="space-y-1.5">
+      {heading && <p className="font-medium text-slate-800 dark:text-slate-100">{heading}</p>}
+      <div className="space-y-1">
+        {items.map((item) => (
+          <div key={item.text} className="flex items-center gap-1.5">
+            <span className={`inline-block h-2 w-2 shrink-0 rounded-xs ${item.swatchClass}`} />
+            <span>{item.text}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 interface DailyConsensusChartProps {
   daily: DailyBucket[];
@@ -238,10 +263,52 @@ export function DailyConsensusChart({
             >
               <th className="py-2 pr-3 font-medium">{t.colDay}</th>
               <th className="py-2 px-3 font-medium">{t.colSnowMedian}</th>
-              <th className="py-2 px-3 font-medium">{t.colQpf}</th>
-              <th className="py-2 px-3 font-medium">{t.colSlr}</th>
-              <th className="py-2 px-3 font-medium">{t.colTemp}</th>
-              <th className="py-2 px-3 font-medium">{t.colWind}</th>
+              <th className="py-2 px-3 font-medium">
+                <TermTooltip
+                  label={t.colSlr}
+                  tooltip={
+                    <div className="space-y-2">
+                      <p>{t.slrTooltip}</p>
+                      <div className="border-t border-slate-200/80 pt-1.5 dark:border-slate-700/80">
+                        <TooltipColorLegend
+                          items={[
+                            { swatchClass: AMBER_SWATCH, text: t.wetSnow },
+                            { swatchClass: SKY_SWATCH, text: t.powderSnow },
+                          ]}
+                        />
+                      </div>
+                    </div>
+                  }
+                />
+              </th>
+              <th className="py-2 px-3 font-medium">
+                <TermTooltip
+                  label={t.colTemp}
+                  tooltip={
+                    <TooltipColorLegend
+                      heading={t.tempLegendHeading}
+                      items={[
+                        { swatchClass: AMBER_SWATCH, text: t.mixed },
+                        { swatchClass: ROSE_SWATCH, text: t.rain },
+                      ]}
+                    />
+                  }
+                />
+              </th>
+              <th className="py-2 px-3 font-medium">
+                <TermTooltip
+                  label={t.colWind}
+                  tooltip={
+                    <TooltipColorLegend
+                      heading={t.windRiskLabel}
+                      items={[
+                        { swatchClass: AMBER_SWATCH, text: t.windHold },
+                        { swatchClass: ROSE_SWATCH, text: t.windClosed },
+                      ]}
+                    />
+                  }
+                />
+              </th>
               <th className="py-2 pl-3 font-medium">{t.colSnowLevel}</th>
             </tr>
           </thead>
@@ -276,9 +343,6 @@ export function DailyConsensusChart({
                     </span>
                   </td>
                   <td className="py-2 px-3 text-slate-700 dark:text-slate-300">
-                    {formatPrecipMm(day.precip_median_in, 1)}
-                  </td>
-                  <td className="py-2 px-3 text-slate-700 dark:text-slate-300">
                     <span
                       title={slrTitle(slrQuality, lang)}
                       className={slrBadge ? `${BADGE_PILL_BASE} ${slrBadge}` : "whitespace-nowrap"}
@@ -311,37 +375,6 @@ export function DailyConsensusChart({
             })}
           </tbody>
         </table>
-      </div>
-
-      {/* Compact Color Key for SLR, Temp Phase & Wind Lift Risk */}
-      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-5 gap-y-1.5 text-[11px] text-slate-500 dark:text-slate-400">
-        <div className="flex flex-wrap items-center gap-3">
-          <span>{t.slrLabel}</span>
-          <span className="inline-flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-xs bg-amber-500 dark:bg-amber-400/80" /> {t.wetSnow}
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-xs bg-sky-500 dark:bg-sky-400/80" /> {t.powderSnow}
-          </span>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <span>{t.tempLabel}</span>
-          <span className="inline-flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-xs bg-amber-500 dark:bg-amber-400/80" /> {t.mixed}
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-xs bg-rose-500 dark:bg-rose-400/80" /> {t.rain}
-          </span>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <span>{t.windRiskLabel}</span>
-          <span className="inline-flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-xs bg-amber-500 dark:bg-amber-400/80" /> {t.windHold}
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <span className="inline-block h-2 w-2 rounded-xs bg-rose-500 dark:bg-rose-400/80" /> {t.windClosed}
-          </span>
-        </div>
       </div>
     </div>
   );

@@ -22,7 +22,14 @@ export interface UiCopy {
   snowpack: {
     title: string;
     subtitle: string;
-    sweUnit: string;
+    colStation: string;
+    colElevation: string;
+    colDistance: string;
+    colBaseDepth: string;
+    colChange24h: string;
+    colSwe: string;
+    colObserved: string;
+    sweTooltip: string;
     unavailable: string;
   };
   daily: {
@@ -30,16 +37,15 @@ export interface UiCopy {
     subtitle: string;
     colDay: string;
     colSnowMedian: string;
-    colQpf: string;
     colSlr: string;
+    slrTooltip: string;
     colTemp: string;
     colWind: string;
     colSnowLevel: string;
     phasePrefix: string;
-    slrLabel: string;
     wetSnow: string;
     powderSnow: string;
-    tempLabel: string;
+    tempLegendHeading: string;
     mixed: string;
     rain: string;
     windRiskLabel: string;
@@ -82,6 +88,10 @@ export interface UiCopy {
     minMaxSpread: string;
     rawNativePrefix: string;
     stopsAtTitle: (hours: number) => string;
+    modelGuideTitle: string;
+    modelDescriptions: Record<string, string>;
+    expandModels: (count: number) => string;
+    collapseModels: string;
   };
 }
 
@@ -108,7 +118,15 @@ export const COPY: Record<Lang, UiCopy> = {
     snowpack: {
       title: "Current Base Depth (Natural Snow)",
       subtitle: "Excludes snowmaking & groomed trails",
-      sweUnit: "SWE",
+      colStation: "Station",
+      colElevation: "Elevation",
+      colDistance: "Distance",
+      colBaseDepth: "Base Depth",
+      colChange24h: "24h Change",
+      colSwe: "SWE",
+      colObserved: "Observed",
+      sweTooltip:
+        "Snow Water Equivalent — the depth of liquid water contained in the natural snowpack if melted. Higher SWE for a given depth indicates a denser, more durable base.",
       unavailable: "Nearby automated snow telemetry is currently unavailable.",
     },
     daily: {
@@ -117,16 +135,16 @@ export const COPY: Record<Lang, UiCopy> = {
         "Bars show median snowfall (cm) across models; vertical lines show the min–max model range per day",
       colDay: "Local Day",
       colSnowMedian: "Snow Median (Range)",
-      colQpf: "QPF",
       colSlr: "SLR",
+      slrTooltip:
+        "Snow-to-Liquid Ratio — units of snow depth per 1 unit of liquid water (e.g., 15:1 = 15 cm snow per 10 mm water).",
       colTemp: "Temp Lo / Hi",
       colWind: "Max Wind / Gust",
       colSnowLevel: "Snow Level",
       phasePrefix: "Phase:",
-      slrLabel: "SLR:",
       wetSnow: "Wet (<10:1)",
       powderSnow: "Powder (≥15:1)",
-      tempLabel: "Temp:",
+      tempLegendHeading: "Precipitation phase:",
       mixed: "Mixed",
       rain: "Rain",
       windRiskLabel: "Wind lift risk:",
@@ -147,8 +165,8 @@ export const COPY: Record<Lang, UiCopy> = {
       panelATitle: "Snowfall Rate (cm/h) & Storm Total",
       hourlyMedian: "Hourly median",
       hourlyMax: "Hourly max",
-      cumulativeSnow: "Cumulative snow",
-      settledDepth: "Settled depth",
+      cumulativeSnow: "Cumulative snow median",
+      settledDepth: "Settled depth median",
       panelBTitle: "Snow Level (m) vs Resort Elevations & Temp (°C)",
       snowLevelLegend: "Snow level (m)",
       airTempLegend: "Air temp (°C)",
@@ -171,6 +189,27 @@ export const COPY: Record<Lang, UiCopy> = {
       minMaxSpread: "min–max spread",
       rawNativePrefix: "raw native",
       stopsAtTitle: (hours) => `Model stops at ${hours}h`,
+      modelGuideTitle: "Model Notes",
+      modelDescriptions: {
+        ecmwf_ifs025:
+          "European Centre (ECMWF) global medium-range model; widely regarded as a benchmark for multi-day storm tracks.",
+        ncep_nbm_conus:
+          "NOAA National Blend of Models (2.5 km CONUS), statistically calibrated for mountain terrain precipitation and temperatures.",
+        gfs_global:
+          "US NOAA Global Forecast System updated four times daily; tracks broad Pacific moisture plumes over 7+ days.",
+        gem_global:
+          "Environment Canada global model (GDPS), often strong at timing cold fronts across North America.",
+        icon_global:
+          "German Weather Service (DWD) global icosahedral-grid model providing an independent European physics perspective.",
+        met_no:
+          "Norwegian Meteorological Institute Locationforecast combining high-res ECMWF output (~9 km) with altitude lapse-rate adjustments.",
+        nws_gridpoints:
+          "Official US National Weather Service forecaster-edited 2.5 km digital grid (NDFD/NBM) incorporating local mountain office expertise.",
+        gfs_hrrr:
+          "High-Resolution Rapid Refresh (3 km) updated hourly; excels at short-range orographic lift and banded snow rates (~48h max).",
+      },
+      expandModels: (count) => `Expand (${count} models)`,
+      collapseModels: "Collapse",
     },
   },
   zh: {
@@ -195,7 +234,15 @@ export const COPY: Record<Lang, UiCopy> = {
     snowpack: {
       title: "当前自然雪深",
       subtitle: "不含人工造雪与压雪雪道",
-      sweUnit: "SWE",
+      colStation: "监测站",
+      colElevation: "海拔",
+      colDistance: "距离",
+      colBaseDepth: "自然雪深",
+      colChange24h: "24h 变化",
+      colSwe: "雪水当量 SWE",
+      colObserved: "实测时间",
+      sweTooltip:
+        "雪水当量 (Snow Water Equivalent)：将自然积雪全部融化后折合的液态水深度。同雪深下 SWE 越高，说明雪层越紧实耐久。",
       unavailable: "附近自动雪深监测站数据暂不可用。",
     },
     daily: {
@@ -203,16 +250,16 @@ export const COPY: Record<Lang, UiCopy> = {
       subtitle: "柱状图为各模型降雪量中位数 (cm)；竖线表示每日各模型的最小–最大范围",
       colDay: "日期",
       colSnowMedian: "降雪中位数 (范围)",
-      colQpf: "降水量 QPF",
       colSlr: "雪水比 SLR",
+      slrTooltip:
+        "雪水比 (Snow-to-Liquid Ratio)：每 1 份液态水可形成的降雪厚度（如 15:1 表示 10 mm 水对应 15 cm 雪）。",
       colTemp: "最低 / 最高温",
       colWind: "最大风速 / 阵风",
       colSnowLevel: "雪线海拔",
       phasePrefix: "降水相态:",
-      slrLabel: "SLR:",
       wetSnow: "湿雪 (<10:1)",
       powderSnow: "粉雪 (≥15:1)",
-      tempLabel: "相态:",
+      tempLegendHeading: "降水相态:",
       mixed: "雨夹雪",
       rain: "降雨",
       windRiskLabel: "大风缆车风险:",
@@ -232,8 +279,8 @@ export const COPY: Record<Lang, UiCopy> = {
       panelATitle: "逐小时降雪率 (cm/h) 与过程累计降雪",
       hourlyMedian: "逐小时中位数",
       hourlyMax: "逐小时最大值",
-      cumulativeSnow: "累计降雪量",
-      settledDepth: "沉降雪深",
+      cumulativeSnow: "累计降雪中位数",
+      settledDepth: "沉降雪深中位数",
       panelBTitle: "雪线高度 (m) 对比雪场海拔与气温 (°C)",
       snowLevelLegend: "雪线高度 (m)",
       airTempLegend: "气温 (°C)",
@@ -255,6 +302,27 @@ export const COPY: Record<Lang, UiCopy> = {
       minMaxSpread: "最小–最大范围",
       rawNativePrefix: "原生模型输出",
       stopsAtTitle: (hours) => `该模型最长覆盖至 ${hours}h`,
+      modelGuideTitle: "模型说明",
+      modelDescriptions: {
+        ecmwf_ifs025:
+          "欧洲中期天气预报中心 (ECMWF) 全球模式，被公认为多日大尺度风暴路径预报的行业基准。",
+        ncep_nbm_conus:
+          "美国 NOAA 多模型融合预报 (NBM, 2.5 km)，针对美国本土山地地形的降水与气温进行了统计校准。",
+        gfs_global:
+          "美国 NOAA 主力全球预报系统 (GFS)，每日更新四次，擅长捕捉未来 7 天以上的大范围太平洋水汽输送。",
+        gem_global:
+          "加拿大气象局 (CMC) 全球模式 (GEM)，对北美冷锋推进节奏和冷空气过程把握较好。",
+        icon_global:
+          "德国气象局 (DWD) 约 11 km 全球模式 (ICON)，提供独立于 ECMWF 与 NOAA 的欧系物理参考。",
+        met_no:
+          "挪威气象研究所 Locationforecast，结合约 9 km 高分辨率 ECMWF 数据与目标海拔直减率进行气温/降雪订正。",
+        nws_gridpoints:
+          "美国国家气象局 (NWS) 官方 2.5 km 精细格点预报 (NDFD)，融入当地气象台站预报员对高山地形的订正判断。",
+        gfs_hrrr:
+          "美国高分辨率快速更新短临模式 (HRRR, 3 km)，逐小时更新，擅长捕捉短期地形抬升与局地强降雪带（最长约 48h）。",
+      },
+      expandModels: (count) => `展开 (${count} 个模型)`,
+      collapseModels: "收起",
     },
   },
 };

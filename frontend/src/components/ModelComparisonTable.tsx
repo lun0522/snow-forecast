@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { COPY, type Lang } from "../i18n";
 import type { BandDetail, WindowKey } from "../types";
 import {
@@ -27,6 +29,7 @@ const MODEL_ORDER = [
 const WINDOWS: WindowKey[] = ["24h", "48h", "72h", "120h", "168h"];
 
 export function ModelComparisonTable({ band, lang = "zh" }: ModelComparisonTableProps) {
+  const [isOpen, setIsOpen] = useState(false);
   const t = COPY[lang].models;
   const models = Object.values(band.models).sort((a, b) => {
     const ia = MODEL_ORDER.indexOf(a.id);
@@ -37,17 +40,46 @@ export function ModelComparisonTable({ band, lang = "zh" }: ModelComparisonTable
   const consensus72 = band.windows["72h"];
 
   return (
-    <div className="rounded-xl border border-slate-200/90 bg-white/90 p-4 shadow-xs md:p-5 dark:border-slate-800/90 dark:bg-slate-900/65 dark:shadow-none">
-      <div className="pb-3 border-b border-slate-200/80 dark:border-slate-800/70">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
-          {t.titlePrefix} · {band.label} ({formatElevM(band.elevation_ft, band.elevation_m)})
-        </h3>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          {t.subtitle}
-        </p>
-      </div>
+    <div
+      className={`rounded-xl border bg-white/90 p-4 shadow-xs transition-colors md:p-5 dark:bg-slate-900/65 dark:shadow-none ${
+        isOpen
+          ? "border-slate-200/90 dark:border-slate-800/90"
+          : "border-slate-200/90 hover:border-sky-300 dark:border-slate-800/90 dark:hover:border-sky-500/40"
+      }`}
+    >
+      <button
+        type="button"
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((prev) => !prev)}
+        className={`group flex w-full cursor-pointer items-center justify-between gap-3 text-left transition ${
+          isOpen ? "pb-3 border-b border-slate-200/80 dark:border-slate-800/70" : ""
+        }`}
+      >
+        <div>
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-white">
+            {t.titlePrefix} · {band.label} ({formatElevM(band.elevation_ft, band.elevation_m)})
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            {t.subtitle}
+          </p>
+        </div>
+        <span
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium shadow-xs transition ${
+            isOpen
+              ? "border-slate-300/90 bg-slate-50 text-slate-700 group-hover:bg-slate-100 group-hover:text-slate-900 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-200 dark:group-hover:bg-slate-800"
+              : "border-sky-300 bg-sky-50 text-sky-700 group-hover:border-sky-400 group-hover:bg-sky-100 group-hover:text-sky-800 dark:border-sky-500/40 dark:bg-sky-500/15 dark:text-sky-200 dark:group-hover:border-sky-400/60 dark:group-hover:bg-sky-500/25"
+          }`}
+        >
+          <span>{isOpen ? t.collapseModels : t.expandModels(models.length)}</span>
+          <ChevronDown
+            className={`h-4 w-4 transition-transform duration-150 ${isOpen ? "rotate-180" : ""}`}
+          />
+        </span>
+      </button>
 
-      <div className="mt-3 overflow-x-auto">
+      {isOpen && (
+        <>
+          <div className="mt-3 overflow-x-auto">
         <table className="w-full min-w-[680px] text-left text-xs">
           <thead>
             <tr
@@ -160,6 +192,28 @@ export function ModelComparisonTable({ band, lang = "zh" }: ModelComparisonTable
           </tbody>
         </table>
       </div>
+
+      <div className="mt-4 border-t border-slate-200/80 pt-3 dark:border-slate-800/70">
+        <div className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+          {t.modelGuideTitle}
+        </div>
+        <dl className="mt-2 space-y-1.5 text-[11px] leading-relaxed text-slate-600 dark:text-slate-400">
+          {models.map((m) => {
+            const desc = t.modelDescriptions[m.id];
+            if (!desc) return null;
+            return (
+              <div key={m.id}>
+                <dt className="inline font-medium text-slate-800 dark:text-slate-200">
+                  {m.display_name}:{" "}
+                </dt>
+                <dd className="inline">{desc}</dd>
+              </div>
+            );
+          })}
+        </dl>
+      </div>
+        </>
+      )}
     </div>
   );
 }

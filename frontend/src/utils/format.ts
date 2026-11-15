@@ -8,10 +8,6 @@ export function inToCm(inches: number): number {
   return inches * 2.54;
 }
 
-export function inToMm(inches: number): number {
-  return inches * 25.4;
-}
-
 export function ftToMeters(feet: number): number {
   return feet * 0.3048;
 }
@@ -33,13 +29,6 @@ export function formatSnowCm(inches: number | null | undefined, digits = 1): str
 
 export function formatSnowCmRange(minIn: number, maxIn: number, digits = 1): string {
   return `(${inToCm(minIn).toFixed(digits)}–${inToCm(maxIn).toFixed(digits)} cm)`;
-}
-
-export function formatPrecipMm(inches: number | null | undefined, digits = 1): string {
-  if (inches === null || inches === undefined || Number.isNaN(inches)) {
-    return "—";
-  }
-  return `${inToMm(inches).toFixed(digits)} mm`;
 }
 
 export function formatElevM(
