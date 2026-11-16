@@ -10,7 +10,7 @@ from typing import Any
 
 from app.fetchers.nws import discover_gridpoint
 from app.fetchers.open_meteo import fetch_dem_elevations
-from app.fetchers.snowpack import discover_snowpack_stations_for_resorts
+from app.fetchers.snowpack import CANADIAN_PROVINCES, discover_snowpack_stations_for_resorts
 from app.geo import meters_to_feet
 from app.http_client import HttpFetchError
 from app.resorts_seed import SEED_RESORTS
@@ -21,6 +21,13 @@ DEFAULT_OUTPUT_PATH = Path(__file__).resolve().parent.parent / "resorts.json"
 def discover_all_resorts(output_path: Path = DEFAULT_OUTPUT_PATH) -> dict[str, Any]:
     """Query public metadata APIs and save verified resort config JSON."""
     resorts = deepcopy(SEED_RESORTS)
+    existing_by_id: dict[str, dict[str, Any]] = {}
+    if output_path.exists():
+        try:
+            existing_doc = json.loads(output_path.read_text(encoding="utf-8"))
+            existing_by_id = {r["id"]: r for r in existing_doc.get("resorts") or [] if r.get("id")}
+        except Exception:
+            existing_by_id = {}
 
     # 1. Best-effort Copernicus 90m DEM lookup from Open-Meteo
     coords: list[tuple[float, float]] = []
@@ -37,17 +44,29 @@ def discover_all_resorts(output_path: Path = DEFAULT_OUTPUT_PATH) -> dict[str, A
             band["dem_elevation_m"] = round(dem_m, 1) if dem_m is not None else None
             band["dem_elevation_ft"] = round(meters_to_feet(dem_m)) if dem_m is not None else None
     except HttpFetchError as exc:
-        print(f"[warn] Open-Meteo DEM lookup unavailable ({exc}); keeping reported elevations.")
+        print(f"[warn] Open-Meteo DEM lookup unavailable ({exc}); keeping existing/reported elevations.")
+        for resort in resorts:
+            prev_bands = (existing_by_id.get(resort["id"]) or {}).get("bands") or {}
+            for band_key, band in resort["bands"].items():
+                prev_band = prev_bands.get(band_key) or {}
+                for k in ("dem_elevation_m", "dem_elevation_ft"):
+                    if k in prev_band:
+                        band[k] = prev_band[k]
 
-    # 2. Enrich each resort with NWS gridpoint endpoints
+    # 2. Enrich each resort with NWS gridpoint endpoints across all elevation bands
     for resort in resorts:
-        for band_key in ("base", "summit"):
+        is_canadian = str(resort.get("state") or "").upper() in CANADIAN_PROVINCES
+        prev_bands = (existing_by_id.get(resort["id"]) or {}).get("bands") or {}
+        for band_key in ("base", "mid", "summit"):
             band = resort["bands"][band_key]
+            if is_canadian:
+                band["nws"] = None
+                continue
             try:
                 band["nws"] = discover_gridpoint(band["lat"], band["lon"])
             except HttpFetchError as exc:
                 print(f"  WARN: NWS gridpoint lookup failed for {resort['id']} {band_key}: {exc}")
-                band["nws"] = None
+                band["nws"] = (prev_bands.get(band_key) or {}).get("nws")
 
     # 3. Best-effort nearby snowpack telemetry station discovery (SNOTEL / BC ASWS)
     snowpack_by_resort = discover_snowpack_stations_for_resorts(resorts)
@@ -55,6 +74,8 @@ def discover_all_resorts(output_path: Path = DEFAULT_OUTPUT_PATH) -> dict[str, A
         stations = snowpack_by_resort.get(resort["id"])
         if stations is not None:
             resort["snowpack_stations"] = stations
+        elif "snowpack_stations" in (existing_by_id.get(resort["id"]) or {}):
+            resort["snowpack_stations"] = existing_by_id[resort["id"]]["snowpack_stations"]
 
     doc = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),

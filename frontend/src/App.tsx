@@ -287,6 +287,8 @@ export function App() {
                 {/* Daily 7-Day Consensus Bar + Spread Chart & Local Day Table */}
                 <DailyConsensusChart
                   daily={activeBand.daily}
+                  bands={detail.bands}
+                  selectedBand={selectedBand}
                   isDark={isDark}
                   lang={lang}
                 />

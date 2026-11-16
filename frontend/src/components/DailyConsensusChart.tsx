@@ -1,20 +1,20 @@
 import { useState } from "react";
 import { COPY, type Lang } from "../i18n";
-import type { DailyBucket } from "../types";
+import type { BandDetail, BandKey, DailyBucket } from "../types";
 import { TermTooltip } from "./TermTooltip";
 import {
   formatSnowCm,
   formatTempC,
+  getResortDailyWindRisk,
   getSlrQuality,
-  getWindRiskLevel,
   inToCm,
   mphToKmh,
+  resortWindRiskTitle,
   riskBadgeClass,
   riskLabel,
   slrBadgeClass,
   slrTitle,
   windRiskBadgeClass,
-  windRiskTitle,
 } from "../utils/format";
 
 const BADGE_PILL_BASE = "inline-block whitespace-nowrap rounded border px-2 py-0.5 font-medium";
@@ -46,12 +46,16 @@ function TooltipColorLegend({
 
 interface DailyConsensusChartProps {
   daily: DailyBucket[];
+  bands?: Partial<Record<BandKey, BandDetail>>;
+  selectedBand?: BandKey;
   isDark?: boolean;
   lang?: Lang;
 }
 
 export function DailyConsensusChart({
   daily,
+  bands,
+  selectedBand,
   isDark = false,
   lang = "zh",
 }: DailyConsensusChartProps) {
@@ -306,8 +310,8 @@ export function DailyConsensusChart({
               const slrQuality = getSlrQuality(day.avg_slr);
               const slrBadge = slrBadgeClass(slrQuality);
               const tempBadge = riskBadgeClass(day.rain_snow_risk);
-              const windRisk = getWindRiskLevel(day.max_wind_mph, day.max_gust_mph);
-              const windBadge = windRiskBadgeClass(windRisk);
+              const windRisk = getResortDailyWindRisk(day, bands, selectedBand);
+              const windBadge = windRiskBadgeClass(windRisk.level);
               return (
                 <tr
                   key={day.date}
@@ -349,7 +353,7 @@ export function DailyConsensusChart({
                   </td>
                   <td className="py-2 pl-3 text-slate-700 dark:text-slate-300">
                     <span
-                      title={windRiskTitle(windRisk, lang)}
+                      title={resortWindRiskTitle(windRisk, selectedBand, lang)}
                       className={windBadge ? `${BADGE_PILL_BASE} ${windBadge}` : "whitespace-nowrap"}
                     >
                       {day.max_wind_mph !== null ? `${Math.round(mphToKmh(day.max_wind_mph))} km/h` : "—"}

@@ -675,6 +675,41 @@ def build_resort_summary(processed_resort: dict[str, Any], fetched_at_utc: str) 
     }
 
 
+def _unify_resort_snow_level(processed_bands: dict[str, Any]) -> None:
+    """Ensure free-atmosphere snow level is identical across a resort's elevation bands."""
+    bands = list(processed_bands.values())
+    if len(bands) <= 1:
+        return
+
+    min_hours = min((len(b.get("hourly") or []) for b in bands), default=0)
+    for idx in range(min_hours):
+        vals = [
+            b["hourly"][idx]["snow_level_median_ft"]
+            for b in bands
+            if b["hourly"][idx].get("snow_level_median_ft") is not None
+        ]
+        if vals:
+            canonical = round(median(vals))
+            for b in bands:
+                b["hourly"][idx]["snow_level_median_ft"] = canonical
+
+    def _unify_buckets(buckets_per_band: list[list[dict[str, Any]]]) -> None:
+        if not buckets_per_band:
+            return
+        for key in ("snow_level_min_ft", "snow_level_max_ft"):
+            by_idx_len = min(len(bl) for bl in buckets_per_band)
+            for idx in range(by_idx_len):
+                vals = [bl[idx][key] for bl in buckets_per_band if bl[idx].get(key) is not None]
+                if vals:
+                    canonical = round(median(vals))
+                    for bl in buckets_per_band:
+                        bl[idx][key] = canonical
+
+    win_keys = list((bands[0].get("windows") or {}).keys())
+    _unify_buckets([[b["windows"][wk] for wk in win_keys if wk in (b.get("windows") or {})] for b in bands])
+    _unify_buckets([b.get("daily") or [] for b in bands])
+
+
 def process_resort_snapshot(
     resort_snapshot: dict[str, Any],
     anchor_utc: datetime,
@@ -697,6 +732,8 @@ def process_resort_snapshot(
             elevation_m=elev_m,
             horizon_hours=horizon_hours,
         )
+
+    _unify_resort_snow_level(processed_bands)
 
     return {
         "id": resort_snapshot["id"],

@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-11-16T01:31:11.139063+00:00",
+  "generated_at_utc": "2026-11-16T02:06:03.870283+00:00",
   "resorts": [
     {
       "id": "northstar",
@@ -34,7 +34,17 @@
           "reported_elevation_ft": 7470,
           "reported_elevation_m": 2276.9,
           "dem_elevation_m": 2223.0,
-          "dem_elevation_ft": 7293
+          "dem_elevation_ft": 7293,
+          "nws": {
+            "grid_id": "REV",
+            "grid_x": 32,
+            "grid_y": 96,
+            "forecast_grid_data_url": "https://api.weather.gov/gridpoints/REV/32,96",
+            "forecast_hourly_url": "https://api.weather.gov/gridpoints/REV/32,96/forecast/hourly",
+            "observation_stations_url": "https://api.weather.gov/gridpoints/REV/32,96/stations",
+            "relative_city": "Carnelian Bay",
+            "relative_state": "CA"
+          }
         },
         "summit": {
           "label": "Mt. Pluto Summit",
@@ -146,7 +156,17 @@
           "reported_elevation_ft": 8160,
           "reported_elevation_m": 2487.2,
           "dem_elevation_m": 2565.0,
-          "dem_elevation_ft": 8415
+          "dem_elevation_ft": 8415,
+          "nws": {
+            "grid_id": "REV",
+            "grid_x": 36,
+            "grid_y": 80,
+            "forecast_grid_data_url": "https://api.weather.gov/gridpoints/REV/36,80",
+            "forecast_hourly_url": "https://api.weather.gov/gridpoints/REV/36,80/forecast/hourly",
+            "observation_stations_url": "https://api.weather.gov/gridpoints/REV/36,80/stations",
+            "relative_city": "Kingsbury",
+            "relative_state": "NV"
+          }
         },
         "summit": {
           "label": "Monument Peak Summit",
@@ -258,7 +278,17 @@
           "reported_elevation_ft": 8800,
           "reported_elevation_m": 2682.2,
           "dem_elevation_m": 2618.0,
-          "dem_elevation_ft": 8589
+          "dem_elevation_ft": 8589,
+          "nws": {
+            "grid_id": "STO",
+            "grid_x": 91,
+            "grid_y": 63,
+            "forecast_grid_data_url": "https://api.weather.gov/gridpoints/STO/91,63",
+            "forecast_hourly_url": "https://api.weather.gov/gridpoints/STO/91,63/forecast/hourly",
+            "observation_stations_url": "https://api.weather.gov/gridpoints/STO/91,63/stations",
+            "relative_city": "Kirkwood",
+            "relative_state": "CA"
+          }
         },
         "summit": {
           "label": "Thimble Peak Summit",
@@ -370,7 +400,17 @@
           "reported_elevation_ft": 8413,
           "reported_elevation_m": 2564.3,
           "dem_elevation_m": 2650.0,
-          "dem_elevation_ft": 8694
+          "dem_elevation_ft": 8694,
+          "nws": {
+            "grid_id": "SLC",
+            "grid_x": 112,
+            "grid_y": 168,
+            "forecast_grid_data_url": "https://api.weather.gov/gridpoints/SLC/112,168",
+            "forecast_hourly_url": "https://api.weather.gov/gridpoints/SLC/112,168/forecast/hourly",
+            "observation_stations_url": "https://api.weather.gov/gridpoints/SLC/112,168/stations",
+            "relative_city": "Park City",
+            "relative_state": "UT"
+          }
         },
         "summit": {
           "label": "Jupiter Peak Summit",
@@ -482,7 +522,17 @@
           "reported_elevation_ft": 11640,
           "reported_elevation_m": 3547.9,
           "dem_elevation_m": 3540.0,
-          "dem_elevation_ft": 11614
+          "dem_elevation_ft": 11614,
+          "nws": {
+            "grid_id": "BOU",
+            "grid_x": 29,
+            "grid_y": 57,
+            "forecast_grid_data_url": "https://api.weather.gov/gridpoints/BOU/29,57",
+            "forecast_hourly_url": "https://api.weather.gov/gridpoints/BOU/29,57/forecast/hourly",
+            "observation_stations_url": "https://api.weather.gov/gridpoints/BOU/29,57/stations",
+            "relative_city": "Keystone",
+            "relative_state": "CO"
+          }
         },
         "summit": {
           "label": "Bergman / Independence Ridge",
@@ -585,7 +635,8 @@
           "reported_elevation_ft": 6069,
           "reported_elevation_m": 1849.8,
           "dem_elevation_m": 1820.0,
-          "dem_elevation_ft": 5971
+          "dem_elevation_ft": 5971,
+          "nws": null
         },
         "summit": {
           "label": "Whistler Peak",

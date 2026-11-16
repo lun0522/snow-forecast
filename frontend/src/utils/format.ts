@@ -1,5 +1,5 @@
-import type { Lang } from "../i18n";
-import type { RainSnowRisk } from "../types";
+import { COPY, type Lang } from "../i18n";
+import type { BandDetail, BandKey, DailyBucket, RainSnowRisk } from "../types";
 
 export type SlrQuality = "wet" | "normal" | "powder";
 export type WindRiskLevel = "none" | "caution" | "high";
@@ -191,4 +191,80 @@ export function windRiskTitle(level: WindRiskLevel, lang: Lang = "en"): string |
     case "none":
       return undefined;
   }
+}
+
+export interface ResortDailyWindRisk {
+  level: WindRiskLevel;
+  triggerBand: BandKey | null;
+  windKmh: number;
+  gustKmh: number;
+}
+
+const WIND_RISK_RANK: Record<WindRiskLevel, number> = {
+  none: 0,
+  caution: 1,
+  high: 2,
+};
+
+export function getResortDailyWindRisk(
+  selectedDay: DailyBucket,
+  bands?: Partial<Record<BandKey, BandDetail>>,
+  selectedBand?: BandKey,
+): ResortDailyWindRisk {
+  const candidates: Array<{ band: BandKey | null; day: DailyBucket }> = [];
+  if (bands) {
+    for (const bk of ["base", "mid", "summit"] as BandKey[]) {
+      const matched = bands[bk]?.daily.find((d) => d.date === selectedDay.date);
+      if (matched) {
+        candidates.push({ band: bk, day: matched });
+      }
+    }
+  }
+  if (!candidates.length) {
+    candidates.push({ band: selectedBand ?? null, day: selectedDay });
+  }
+
+  let best: ResortDailyWindRisk = {
+    level: "none",
+    triggerBand: selectedBand ?? null,
+    windKmh: 0,
+    gustKmh: 0,
+  };
+
+  for (const { band, day } of candidates) {
+    const level = getWindRiskLevel(day.max_wind_mph, day.max_gust_mph);
+    const windKmh = day.max_wind_mph != null ? Math.round(mphToKmh(day.max_wind_mph)) : 0;
+    const gustKmh = day.max_gust_mph != null ? Math.round(mphToKmh(day.max_gust_mph)) : 0;
+    const rankDiff = WIND_RISK_RANK[level] - WIND_RISK_RANK[best.level];
+    const gustDiff = gustKmh - best.gustKmh;
+    const windDiff = windKmh - best.windKmh;
+    const isExactTiePreferSelected =
+      rankDiff === 0 && gustDiff === 0 && windDiff === 0 && band === selectedBand;
+    const isStronger =
+      rankDiff > 0 ||
+      (rankDiff === 0 && (gustDiff > 0 || (gustDiff === 0 && windDiff > 0))) ||
+      isExactTiePreferSelected;
+    if (isStronger) {
+      best = { level, triggerBand: band, windKmh, gustKmh };
+    }
+  }
+  return best;
+}
+
+export function resortWindRiskTitle(
+  summary: ResortDailyWindRisk,
+  selectedBand?: BandKey,
+  lang: Lang = "en",
+): string | undefined {
+  const base = windRiskTitle(summary.level, lang);
+  if (!base) {
+    return undefined;
+  }
+  if (summary.triggerBand && selectedBand && summary.triggerBand !== selectedBand) {
+    const bandName = COPY[lang].header.bands[summary.triggerBand];
+    return lang === "zh"
+      ? `${base}（${bandName}: ${summary.windKmh} km/h，阵风 ${summary.gustKmh} km/h）`
+      : `${base} (${bandName}: ${summary.windKmh} km/h, ${summary.gustKmh} km/h gust)`;
+  }
+  return base;
 }

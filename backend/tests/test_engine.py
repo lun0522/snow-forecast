@@ -235,6 +235,39 @@ class BlendingTests(unittest.TestCase):
         self.assertNotIn("gfs_hrrr", summit["windows"]["24h"]["models_used"])
         self.assertIn("ecmwf_ifs025", summit["windows"]["24h"]["models_used"])
 
+    def test_snow_level_is_unified_across_elevation_bands(self) -> None:
+        from copy import deepcopy
+
+        snap = self._build_synthetic_snapshot()
+        summit_band = snap["resorts"][0]["bands"]["summit"]
+        base_band = deepcopy(summit_band)
+        base_band["label"] = "Base"
+        base_band["elevation_ft"] = 7800
+        base_band["elevation_m"] = 2377.4
+        # Shift base freezing_level_m and nws snow_level_m by +400m to simulate adjacent grid cell
+        for row in base_band["open_meteo"]["models"]["ecmwf_ifs025"]["hourly"]:
+            row["freezing_level_m"] = 2400.0
+        for row in base_band["open_meteo"]["models"]["gfs_global"]["hourly"]:
+            row["freezing_level_m"] = 2400.0
+        for entry in base_band["nws"]["layers"]["snow_level_m"]:
+            entry["value"] = 2200.0
+        snap["resorts"][0]["bands"]["base"] = base_band
+
+        processed = process_snapshot(snap)
+        res_bands = processed["resorts"][0]["bands"]
+        self.assertEqual(
+            res_bands["base"]["hourly"][0]["snow_level_median_ft"],
+            res_bands["summit"]["hourly"][0]["snow_level_median_ft"],
+        )
+        self.assertEqual(
+            res_bands["base"]["daily"][0]["snow_level_max_ft"],
+            res_bands["summit"]["daily"][0]["snow_level_max_ft"],
+        )
+        self.assertEqual(
+            res_bands["base"]["windows"]["24h"]["snow_level_min_ft"],
+            res_bands["summit"]["windows"]["24h"]["snow_level_min_ft"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
