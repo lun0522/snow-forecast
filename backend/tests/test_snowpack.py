@@ -7,14 +7,26 @@ import unittest
 from unittest.mock import patch
 
 from app.engine.blending import process_snapshot
-from app.fetchers.bc_asws import parse_bc_asws_csv, parse_bc_stations_geojson
+from app.fetchers.bc_asws import (
+    fetch_bc_asws_snowpack_for_resorts,
+    parse_bc_asws_csv,
+    parse_bc_stations_geojson,
+)
 from app.fetchers.snowpack import (
     SNOWPACK_LABEL,
     fetch_current_snowpack_for_resorts,
     select_nearest_stations,
     summarize_latest_series,
 )
-from app.fetchers.snotel import parse_snotel_data_response, parse_snotel_stations
+from app.fetchers.snotel import (
+    SNOTEL_DATA_URL,
+    SNOTEL_STATIONS_URL,
+    fetch_snotel_snowpack_for_resorts,
+    fetch_snotel_stations_for_states,
+    parse_snotel_data_response,
+    parse_snotel_report_csv,
+    parse_snotel_stations,
+)
 from app.http_client import HttpFetchError
 
 
@@ -125,6 +137,117 @@ class SnotelAdapterTests(unittest.TestCase):
         self.assertAlmostEqual(rec["swe_mm"], 68.6)
         self.assertEqual(rec["observed_utc"], datetime(2026, 11, 14, 8, 0, tzinfo=timezone.utc))
 
+    def test_parse_snotel_report_csv(self) -> None:
+        csv_text = "\n".join(
+            [
+                "# Warning header comment",
+                "Date,Snow Depth (in),Snow Water Equivalent (in)",
+                "2026-11-13 00:00,5,1.9",
+                "2026-11-14 00:00,12,2.7",
+            ]
+        )
+        rec = parse_snotel_report_csv(csv_text, tz_offset_hours=-8.0)
+        assert rec is not None
+        self.assertAlmostEqual(rec["snow_depth_cm"], 30.5)
+        self.assertAlmostEqual(rec["delta_24h_cm"], 17.8)
+        self.assertAlmostEqual(rec["swe_mm"], 68.6)
+        self.assertEqual(rec["observed_utc"], datetime(2026, 11, 14, 8, 0, tzinfo=timezone.utc))
+
+    def test_fetch_snotel_uses_cached_snowpack_stations_without_stations_api(self) -> None:
+        resort = _sample_resorts()[0]
+        resort["snowpack_stations"] = [
+            {
+                "id": "1067:CA:SNTL",
+                "name": "Carson Pass",
+                "lat": 38.6927,
+                "lon": -120.0022,
+                "elevation_m": 2548.1,
+                "tz_offset_hours": -8.0,
+            }
+        ]
+        called_urls: list[str] = []
+
+        def fake_get_json(url: str, **_kwargs: object):
+            called_urls.append(url)
+            if url == SNOTEL_STATIONS_URL:
+                raise AssertionError("Should not call /stations when snowpack_stations is cached")
+            return [
+                {
+                    "stationTriplet": "1067:CA:SNTL",
+                    "data": [
+                        {
+                            "stationElement": {"elementCode": "SNWD"},
+                            "values": [{"date": "2026-11-14 00:00", "value": 10}],
+                        }
+                    ],
+                }
+            ]
+
+        with patch("app.fetchers.snotel.get_json", side_effect=fake_get_json):
+            out = fetch_snotel_snowpack_for_resorts([resort])
+
+        self.assertEqual(called_urls, [SNOTEL_DATA_URL])
+        self.assertEqual(out["kirkwood"]["status"], "ok")
+        self.assertEqual(out["kirkwood"]["stations"][0]["id"], "1067:CA:SNTL")
+        self.assertAlmostEqual(out["kirkwood"]["stations"][0]["snow_depth_cm"], 25.4)
+
+    def test_fetch_snotel_stations_falls_back_to_per_state_on_batch_error(self) -> None:
+        calls: list[str] = []
+
+        def fake_get_json(url: str, params=None, **_kwargs: object):
+            triplets = (params or {}).get("stationTriplets", "")
+            calls.append(triplets)
+            if "," in triplets:
+                raise HttpFetchError("HTTP 500 fetching combined stations")
+            if triplets == "*:CA:SNTL":
+                return [
+                    {
+                        "stationTriplet": "1067:CA:SNTL",
+                        "name": "Carson Pass",
+                        "latitude": 38.6927,
+                        "longitude": -120.0022,
+                        "elevation": 8360.0,
+                        "dataTimeZone": -8.0,
+                    }
+                ]
+            raise HttpFetchError("HTTP 500 fetching UT")
+
+        with patch("app.fetchers.snotel.get_json", side_effect=fake_get_json):
+            stations = fetch_snotel_stations_for_states({"CA", "UT"})
+
+        self.assertEqual(calls, ["*:CA:SNTL,*:UT:SNTL", "*:CA:SNTL", "*:UT:SNTL"])
+        self.assertEqual([s["id"] for s in stations], ["1067:CA:SNTL"])
+
+    def test_fetch_snotel_data_falls_back_to_report_generator_csv(self) -> None:
+        resort = _sample_resorts()[0]
+        resort["snowpack_stations"] = [
+            {
+                "id": "1067:CA:SNTL",
+                "name": "Carson Pass",
+                "lat": 38.6927,
+                "lon": -120.0022,
+                "elevation_m": 2548.1,
+                "tz_offset_hours": -8.0,
+            }
+        ]
+        csv_text = "\n".join(
+            [
+                "# Warning",
+                "Date,Snow Depth (in),Snow Water Equivalent (in)",
+                "2026-11-14 00:00,10,2.5",
+            ]
+        )
+
+        with (
+            patch("app.fetchers.snotel.get_json", side_effect=HttpFetchError("HTTP 500 on /data")),
+            patch("app.fetchers.snotel.get_text", return_value=csv_text),
+        ):
+            out = fetch_snotel_snowpack_for_resorts([resort])
+
+        self.assertEqual(out["kirkwood"]["status"], "ok")
+        self.assertAlmostEqual(out["kirkwood"]["stations"][0]["snow_depth_cm"], 25.4)
+        self.assertAlmostEqual(out["kirkwood"]["stations"][0]["swe_mm"], 63.5)
+
 
 class BcAswsAdapterTests(unittest.TestCase):
     def test_parse_bc_stations_and_sparse_csv_tail(self) -> None:
@@ -170,6 +293,29 @@ class BcAswsAdapterTests(unittest.TestCase):
         self.assertEqual(callaghan[0], 2.0)
         self.assertEqual(tenquille[0], 24.0)
         self.assertEqual(tenquille[2], 6.0)
+
+    def test_fetch_bc_asws_uses_cached_snowpack_stations(self) -> None:
+        resort = _sample_resorts()[1]
+        resort["snowpack_stations"] = [
+            {
+                "id": "3A20P",
+                "name": "Callaghan Creek",
+                "lat": 50.1371,
+                "lon": -123.1029,
+                "elevation_m": 1017.0,
+            }
+        ]
+        csv_text = "DATE(UTC),3A20P Callaghan Creek\n2026-11-14 07:00,45.0\n"
+
+        with (
+            patch("app.fetchers.bc_asws.get_json", side_effect=AssertionError("Should skip WFS")),
+            patch("app.fetchers.bc_asws.get_text", return_value=csv_text),
+        ):
+            out = fetch_bc_asws_snowpack_for_resorts([resort])
+
+        self.assertEqual(out["whistler-blackcomb"]["status"], "ok")
+        self.assertEqual(out["whistler-blackcomb"]["stations"][0]["id"], "3A20P")
+        self.assertEqual(out["whistler-blackcomb"]["stations"][0]["snow_depth_cm"], 45.0)
 
 
 class DispatcherAndPreservationTests(unittest.TestCase):

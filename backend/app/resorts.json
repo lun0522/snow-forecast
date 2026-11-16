@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-11-14T07:47:13.151471+00:00",
+  "generated_at_utc": "2026-11-16T01:31:11.139063+00:00",
   "resorts": [
     {
       "id": "northstar",
@@ -55,7 +55,63 @@
             "relative_state": "CA"
           }
         }
-      }
+      },
+      "snowpack_stations": [
+        {
+          "id": "834:CA:SNTL",
+          "name": "Truckee #2",
+          "lat": 39.30087,
+          "lon": -120.18407,
+          "elevation_m": 1981.2,
+          "distance_km": 6.6,
+          "tz_offset_hours": -8.0
+        },
+        {
+          "id": "809:CA:SNTL",
+          "name": "Tahoe City Cross",
+          "lat": 39.17162,
+          "lon": -120.15362,
+          "elevation_m": 2060.4,
+          "distance_km": 9.8,
+          "tz_offset_hours": -8.0
+        },
+        {
+          "id": "784:CA:SNTL",
+          "name": "Palisades Tahoe",
+          "lat": 39.18986,
+          "lon": -120.26576,
+          "elevation_m": 2441.4,
+          "distance_km": 13.9,
+          "tz_offset_hours": -8.0
+        },
+        {
+          "id": "848:CA:SNTL",
+          "name": "Ward Creek #3",
+          "lat": 39.13545,
+          "lon": -120.21865,
+          "elevation_m": 2057.4,
+          "distance_km": 15.6,
+          "tz_offset_hours": -8.0
+        },
+        {
+          "id": "652:NV:SNTL",
+          "name": "Mt Rose Ski Area",
+          "lat": 39.31573,
+          "lon": -119.89473,
+          "elevation_m": 2685.3,
+          "distance_km": 21.3,
+          "tz_offset_hours": -8.0
+        },
+        {
+          "id": "428:CA:SNTL",
+          "name": "Css Lab",
+          "lat": 39.32565,
+          "lon": -120.36807,
+          "elevation_m": 2100.1,
+          "distance_km": 21.8,
+          "tz_offset_hours": -8.0
+        }
+      ]
     },
     {
       "id": "heavenly",
@@ -111,7 +167,63 @@
             "relative_state": "NV"
           }
         }
-      }
+      },
+      "snowpack_stations": [
+        {
+          "id": "518:CA:SNTL",
+          "name": "Heavenly Valley",
+          "lat": 38.92431,
+          "lon": -119.91641,
+          "elevation_m": 2603.0,
+          "distance_km": 0.6,
+          "tz_offset_hours": -8.0
+        },
+        {
+          "id": "508:CA:SNTL",
+          "name": "Hagans Meadow",
+          "lat": 38.8519,
+          "lon": -119.9374,
+          "elevation_m": 2359.2,
+          "distance_km": 8.7,
+          "tz_offset_hours": -8.0
+        },
+        {
+          "id": "1050:CA:SNTL",
+          "name": "Horse Meadow",
+          "lat": 38.83652,
+          "lon": -119.88732,
+          "elevation_m": 2615.2,
+          "distance_km": 10.6,
+          "tz_offset_hours": -8.0
+        },
+        {
+          "id": "473:CA:SNTL",
+          "name": "Fallen Leaf",
+          "lat": 38.93403,
+          "lon": -120.0545,
+          "elevation_m": 1905.0,
+          "distance_km": 11.7,
+          "tz_offset_hours": -8.0
+        },
+        {
+          "id": "463:CA:SNTL",
+          "name": "Echo Peak",
+          "lat": 38.849,
+          "lon": -120.0795,
+          "elevation_m": 2331.7,
+          "distance_km": 16.5,
+          "tz_offset_hours": -8.0
+        },
+        {
+          "id": "724:CA:SNTL",
+          "name": "Rubicon #2",
+          "lat": 38.99927,
+          "lon": -120.13139,
+          "elevation_m": 2304.3,
+          "distance_km": 20.0,
+          "tz_offset_hours": -8.0
+        }
+      ]
     },
     {
       "id": "kirkwood",
@@ -167,7 +279,63 @@
             "relative_state": "CA"
           }
         }
-      }
+      },
+      "snowpack_stations": [
+        {
+          "id": "1067:CA:SNTL",
+          "name": "Carson Pass",
+          "lat": 38.6927,
+          "lon": -120.0022,
+          "elevation_m": 2548.1,
+          "distance_km": 5.8,
+          "tz_offset_hours": -8.0
+        },
+        {
+          "id": "1049:CA:SNTL",
+          "name": "Forestdale Creek",
+          "lat": 38.68245,
+          "lon": -119.9597,
+          "elevation_m": 2453.6,
+          "distance_km": 9.1,
+          "tz_offset_hours": -8.0
+        },
+        {
+          "id": "1331:CA:SNTL",
+          "name": "Lost Lakes",
+          "lat": 38.64745,
+          "lon": -119.95141,
+          "elevation_m": 2633.5,
+          "distance_km": 10.2,
+          "tz_offset_hours": -8.0
+        },
+        {
+          "id": "356:CA:SNTL",
+          "name": "Blue Lakes",
+          "lat": 38.60801,
+          "lon": -119.92455,
+          "elevation_m": 2456.7,
+          "distance_km": 14.1,
+          "tz_offset_hours": -8.0
+        },
+        {
+          "id": "1051:CA:SNTL",
+          "name": "Burnside Lake",
+          "lat": 38.71943,
+          "lon": -119.8942,
+          "elevation_m": 2493.3,
+          "distance_km": 15.6,
+          "tz_offset_hours": -8.0
+        },
+        {
+          "id": "463:CA:SNTL",
+          "name": "Echo Peak",
+          "lat": 38.849,
+          "lon": -120.0795,
+          "elevation_m": 2331.7,
+          "distance_km": 19.6,
+          "tz_offset_hours": -8.0
+        }
+      ]
     },
     {
       "id": "park-city",
@@ -223,7 +391,63 @@
             "relative_state": "UT"
           }
         }
-      }
+      },
+      "snowpack_stations": [
+        {
+          "id": "814:UT:SNTL",
+          "name": "Thaynes Canyon",
+          "lat": 40.6235,
+          "lon": -111.53322,
+          "elevation_m": 2822.4,
+          "distance_km": 1.3,
+          "tz_offset_hours": -8.0
+        },
+        {
+          "id": "366:UT:SNTL",
+          "name": "Brighton",
+          "lat": 40.59936,
+          "lon": -111.58167,
+          "elevation_m": 2679.2,
+          "distance_km": 6.2,
+          "tz_offset_hours": -8.0
+        },
+        {
+          "id": "628:UT:SNTL",
+          "name": "Mill-D North",
+          "lat": 40.65883,
+          "lon": -111.63683,
+          "elevation_m": 2724.9,
+          "distance_km": 10.1,
+          "tz_offset_hours": -8.0
+        },
+        {
+          "id": "856:UT:SNTL",
+          "name": "Parleys Upper",
+          "lat": 40.70194,
+          "lon": -111.60619,
+          "elevation_m": 2539.0,
+          "distance_km": 10.5,
+          "tz_offset_hours": -8.0
+        },
+        {
+          "id": "1308:UT:SNTL",
+          "name": "Atwater",
+          "lat": 40.59124,
+          "lon": -111.63775,
+          "elevation_m": 2667.0,
+          "distance_km": 10.8,
+          "tz_offset_hours": -8.0
+        },
+        {
+          "id": "766:UT:SNTL",
+          "name": "Snowbird",
+          "lat": 40.56914,
+          "lon": -111.65852,
+          "elevation_m": 2795.0,
+          "distance_km": 13.5,
+          "tz_offset_hours": -8.0
+        }
+      ]
     },
     {
       "id": "keystone",
@@ -279,7 +503,63 @@
             "relative_state": "CO"
           }
         }
-      }
+      },
+      "snowpack_stations": [
+        {
+          "id": "505:CO:SNTL",
+          "name": "Grizzly Peak",
+          "lat": 39.64646,
+          "lon": -105.8694,
+          "elevation_m": 3386.3,
+          "distance_km": 9.7,
+          "tz_offset_hours": -8.0
+        },
+        {
+          "id": "602:CO:SNTL",
+          "name": "Loveland Basin",
+          "lat": 39.67428,
+          "lon": -105.90264,
+          "elevation_m": 3477.8,
+          "distance_km": 11.1,
+          "tz_offset_hours": -8.0
+        },
+        {
+          "id": "935:CO:SNTL",
+          "name": "Jackwhacker Gulch",
+          "lat": 39.57096,
+          "lon": -105.80355,
+          "elevation_m": 3361.9,
+          "distance_km": 11.8,
+          "tz_offset_hours": -8.0
+        },
+        {
+          "id": "937:CO:SNTL",
+          "name": "Michigan Creek",
+          "lat": 39.43579,
+          "lon": -105.91072,
+          "elevation_m": 3261.4,
+          "distance_km": 16.2,
+          "tz_offset_hours": -8.0
+        },
+        {
+          "id": "970:CO:SNTL",
+          "name": "Jones Pass",
+          "lat": 39.7645,
+          "lon": -105.90655,
+          "elevation_m": 3179.1,
+          "distance_km": 20.8,
+          "tz_offset_hours": -8.0
+        },
+        {
+          "id": "415:CO:SNTL",
+          "name": "Copper Mountain",
+          "lat": 39.48917,
+          "lon": -106.17154,
+          "elevation_m": 3200.4,
+          "distance_km": 22.2,
+          "tz_offset_hours": -8.0
+        }
+      ]
     },
     {
       "id": "whistler-blackcomb",
@@ -317,7 +597,57 @@
           "dem_elevation_ft": 7126,
           "nws": null
         }
-      }
+      },
+      "snowpack_stations": [
+        {
+          "id": "3A20P",
+          "name": "Callaghan Creek",
+          "lat": 50.13706,
+          "lon": -123.10289,
+          "elevation_m": 1017.0,
+          "distance_km": 13.4
+        },
+        {
+          "id": "3A25P",
+          "name": "Squamish River Upper",
+          "lat": 50.1543,
+          "lon": -123.4361,
+          "elevation_m": 1360.0,
+          "distance_km": 36.2
+        },
+        {
+          "id": "1D06P",
+          "name": "Tenquille Lake",
+          "lat": 50.53625,
+          "lon": -122.92996,
+          "elevation_m": 1680.0,
+          "distance_km": 51.9
+        },
+        {
+          "id": "3A29P",
+          "name": "Loch Lomand",
+          "lat": 49.592,
+          "lon": -123.0444,
+          "elevation_m": 1070.0,
+          "distance_km": 53.6
+        },
+        {
+          "id": "1D18P",
+          "name": "Disappointment Lake",
+          "lat": 49.555,
+          "lon": -122.75833,
+          "elevation_m": 1050.0,
+          "distance_km": 58.8
+        },
+        {
+          "id": "1D20P",
+          "name": "Darcy",
+          "lat": 50.5217,
+          "lon": -122.4978,
+          "elevation_m": 334.0,
+          "distance_km": 59.5
+        }
+      ]
     }
   ]
 }

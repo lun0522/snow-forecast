@@ -121,22 +121,102 @@ def unavailable_snowpack(network: str, source_name: str, error: str) -> dict[str
     }
 
 
+def _partition_resorts_by_network(
+    resorts: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    us_resorts = [r for r in resorts if str(r.get("state") or "").upper() not in CANADIAN_PROVINCES]
+    bc_resorts = [r for r in resorts if str(r.get("state") or "").upper() == "BC"]
+    other_resorts = [r for r in resorts if r not in us_resorts and r not in bc_resorts]
+    return us_resorts, bc_resorts, other_resorts
+
+
+def _serialize_candidate_station(station: dict[str, Any]) -> dict[str, Any]:
+    out = {
+        "id": str(station["id"]),
+        "name": str(station["name"]),
+        "lat": round(float(station["lat"]), 5),
+        "lon": round(float(station["lon"]), 5),
+        "elevation_m": round(float(station["elevation_m"]), 1),
+        "distance_km": round(float(station["distance_km"]), 1),
+    }
+    if "tz_offset_hours" in station:
+        out["tz_offset_hours"] = float(station["tz_offset_hours"])
+    return out
+
+
+def _match_candidate_stations(
+    resorts: list[dict[str, Any]],
+    station_pool: list[dict[str, Any]],
+    max_distance_km: float,
+    limit: int,
+) -> dict[str, list[dict[str, Any]]]:
+    matched: dict[str, list[dict[str, Any]]] = {}
+    for resort in resorts:
+        lat, lon = resort_anchor_coords(resort)
+        near = select_nearest_stations(
+            lat=lat,
+            lon=lon,
+            stations=station_pool,
+            max_distance_km=max_distance_km,
+            limit=limit,
+        )
+        matched[resort["id"]] = [_serialize_candidate_station(s) for s in near]
+    return matched
+
+
+def discover_snowpack_stations_for_resorts(
+    resorts: list[dict[str, Any]],
+    limit: int = 6,
+    us_max_distance_km: float = 60.0,
+    bc_max_distance_km: float = 80.0,
+) -> dict[str, list[dict[str, Any]]]:
+    """Discover and return top nearby candidate snowpack stations per resort ID."""
+    from app.fetchers.bc_asws import fetch_bc_asws_stations
+    from app.fetchers.snotel import STATE_QUERY_NEIGHBORS, fetch_snotel_stations_for_states
+
+    us_resorts, bc_resorts, _ = _partition_resorts_by_network(resorts)
+    discovered: dict[str, list[dict[str, Any]]] = {}
+
+    if us_resorts:
+        states: set[str] = set()
+        for r in us_resorts:
+            st = str(r.get("state") or "").upper()
+            if st:
+                states.update(STATE_QUERY_NEIGHBORS.get(st, (st,)))
+        if states:
+            try:
+                us_stations = fetch_snotel_stations_for_states(states)
+                discovered.update(
+                    _match_candidate_stations(us_resorts, us_stations, us_max_distance_km, limit)
+                )
+            except HttpFetchError as exc:
+                print(f"[warn] SNOTEL station discovery unavailable ({exc}).")
+
+    if bc_resorts:
+        try:
+            bc_stations = fetch_bc_asws_stations()
+            discovered.update(
+                _match_candidate_stations(bc_resorts, bc_stations, bc_max_distance_km, limit)
+            )
+        except HttpFetchError as exc:
+            print(f"[warn] BC ASWS station discovery unavailable ({exc}).")
+
+    return discovered
+
+
 def fetch_current_snowpack_for_resorts(resorts: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     """Fetch natural snowpack telemetry per resort using regional station adapters."""
     from app.fetchers.bc_asws import BC_ASWS_SOURCE_NAME, fetch_bc_asws_snowpack_for_resorts
     from app.fetchers.snotel import SNOTEL_SOURCE_NAME, fetch_snotel_snowpack_for_resorts
 
     results: dict[str, dict[str, Any]] = {}
-    us_resorts = [r for r in resorts if str(r.get("state") or "").upper() not in CANADIAN_PROVINCES]
-    bc_resorts = [r for r in resorts if str(r.get("state") or "").upper() == "BC"]
-    other_resorts = [
-        r for r in resorts if r not in us_resorts and r not in bc_resorts
-    ]
+    us_resorts, bc_resorts, other_resorts = _partition_resorts_by_network(resorts)
 
     if us_resorts:
         try:
             results.update(fetch_snotel_snowpack_for_resorts(us_resorts))
         except HttpFetchError as exc:
+            print(f"[warn] SNOTEL snowpack telemetry unavailable ({exc})")
             for r in us_resorts:
                 results[r["id"]] = unavailable_snowpack("snotel", SNOTEL_SOURCE_NAME, str(exc))
 
@@ -144,6 +224,7 @@ def fetch_current_snowpack_for_resorts(resorts: list[dict[str, Any]]) -> dict[st
         try:
             results.update(fetch_bc_asws_snowpack_for_resorts(bc_resorts))
         except HttpFetchError as exc:
+            print(f"[warn] BC ASWS snowpack telemetry unavailable ({exc})")
             for r in bc_resorts:
                 results[r["id"]] = unavailable_snowpack("bc_asws", BC_ASWS_SOURCE_NAME, str(exc))
 

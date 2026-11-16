@@ -72,5 +72,5 @@ Open `http://localhost:5173` in your browser (`/api/*` requests proxy automatica
 
 1. Push to `main`.
 2. In your GitHub repository: **Settings → Pages → Build and deployment → Source**, choose **GitHub Actions**.
-3. Run **Deploy Static Forecast Site to Pages** (`.github/workflows/deploy.yml`) once from the **Actions** tab, or let it trigger automatically on pushes to `main` and every 4 hours on schedule (`0 */4 * * *` UTC).
+3. Run **Deploy Static Forecast Site to GitHub Pages** (`.github/workflows/deploy.yml`) once from the **Actions** tab, or let it trigger automatically on pushes to `main` and every 4 hours on schedule (`17 */4 * * *` UTC).
 4. Each workflow run tests the backend, runs `python -m app.scripts.update --export-dir ../frontend/public/data`, builds Vite in static mode (`VITE_DATA_MODE=static`), and deploys `frontend/dist` to https://lun0522.github.io/snow-forecast/.

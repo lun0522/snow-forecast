@@ -100,8 +100,11 @@ export function SnowpackPanel({ snowpack, timezone, lang = "zh" }: SnowpackPanel
           </table>
         </div>
       ) : (
-        <p className="mt-2.5 text-xs text-slate-500">
-          {snowpack.error || t.unavailable}
+        <p
+          title={snowpack.error || undefined}
+          className="mt-2.5 text-xs text-slate-500 dark:text-slate-400"
+        >
+          {t.unavailable}
         </p>
       )}
     </div>

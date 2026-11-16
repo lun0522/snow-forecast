@@ -92,13 +92,8 @@ def parse_bc_asws_csv(
     return {sid: pts for sid, pts in series_by_id.items() if pts}
 
 
-def fetch_bc_asws_snowpack_for_resorts(
-    resorts: list[dict[str, Any]],
-    stations_limit: int = 3,
-    max_distance_km: float = 80.0,
-    timeout: float = 20.0,
-) -> dict[str, dict[str, Any]]:
-    """Discover nearby BC ASWS stations and read latest SD.csv (and optional SW.csv)."""
+def fetch_bc_asws_stations(timeout: float = 20.0) -> list[dict[str, Any]]:
+    """Fetch active BC ASWS station metadata from the BC OpenMaps WFS feed."""
     wfs_payload = get_json(
         BC_ASWS_STATIONS_WFS_URL,
         params={
@@ -110,16 +105,33 @@ def fetch_bc_asws_snowpack_for_resorts(
         },
         timeout=timeout,
     )
-    stations = parse_bc_stations_geojson(wfs_payload)
+    return parse_bc_stations_geojson(wfs_payload)
+
+
+def fetch_bc_asws_snowpack_for_resorts(
+    resorts: list[dict[str, Any]],
+    stations_limit: int = 3,
+    max_distance_km: float = 80.0,
+    timeout: float = 20.0,
+) -> dict[str, dict[str, Any]]:
+    """Read latest BC ASWS SD.csv (and optional SW.csv) using cached or WFS-discovered stations."""
+    if not resorts:
+        return {}
+
+    discovered_stations: list[dict[str, Any]] = []
+    if any(not isinstance(r.get("snowpack_stations"), list) for r in resorts):
+        discovered_stations = fetch_bc_asws_stations(timeout=timeout)
 
     candidates_by_resort: dict[str, list[dict[str, Any]]] = {}
     needed_ids: set[str] = set()
     for resort in resorts:
         lat, lon = resort_anchor_coords(resort)
+        cached_pool = resort.get("snowpack_stations")
+        pool = cached_pool if isinstance(cached_pool, list) else discovered_stations
         candidates = select_nearest_stations(
             lat=lat,
             lon=lon,
-            stations=stations,
+            stations=pool,
             max_distance_km=max_distance_km,
             limit=max(stations_limit + 3, 6),
         )

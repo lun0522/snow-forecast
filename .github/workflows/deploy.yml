@@ -5,8 +5,8 @@ on:
     branches:
       - main
   schedule:
-    # Refresh forecasts every 4 hours (00:00, 04:00, 08:00, 12:00, 16:00, 20:00 UTC)
-    - cron: "0 */4 * * *"
+    # Refresh forecasts every 4 hours (off-peak minute to avoid GitHub cron queue spikes)
+    - cron: "17 */4 * * *"
   workflow_dispatch:
 
 permissions:

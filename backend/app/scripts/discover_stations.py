@@ -10,6 +10,7 @@ from typing import Any
 
 from app.fetchers.nws import discover_gridpoint
 from app.fetchers.open_meteo import fetch_dem_elevations
+from app.fetchers.snowpack import discover_snowpack_stations_for_resorts
 from app.geo import meters_to_feet
 from app.http_client import HttpFetchError
 from app.resorts_seed import SEED_RESORTS
@@ -47,6 +48,13 @@ def discover_all_resorts(output_path: Path = DEFAULT_OUTPUT_PATH) -> dict[str, A
             except HttpFetchError as exc:
                 print(f"  WARN: NWS gridpoint lookup failed for {resort['id']} {band_key}: {exc}")
                 band["nws"] = None
+
+    # 3. Best-effort nearby snowpack telemetry station discovery (SNOTEL / BC ASWS)
+    snowpack_by_resort = discover_snowpack_stations_for_resorts(resorts)
+    for resort in resorts:
+        stations = snowpack_by_resort.get(resort["id"])
+        if stations is not None:
+            resort["snowpack_stations"] = stations
 
     doc = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
